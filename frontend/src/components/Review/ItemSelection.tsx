@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Check, Search } from 'lucide-react';
 import { Subject, Lecturer } from '../../types';
-import { subjects, lecturers } from '../../data/mockData';
+import { subjectsApi, lecturersApi } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
 
 interface ItemSelectionProps {
   categoryId: string;
@@ -13,18 +14,24 @@ interface ItemSelectionProps {
 export default function ItemSelection({ categoryId, categoryTitle, selectedItems, onItemsChange }: ItemSelectionProps) {
   const [searchTerm, setSearchTerm] = useState('');
   
+  const { data: subjectsData, loading: subjectsLoading } = useApi(
+    () => subjectsApi.getSubjects({ search: searchTerm }),
+    [searchTerm]
+  );
+  
+  const { data: lecturersData, loading: lecturersLoading } = useApi(
+    () => lecturersApi.getLecturers({ search: searchTerm }),
+    [searchTerm]
+  );
+
   const getItems = () => {
-    if (categoryId === 'subjects') return subjects;
-    if (categoryId === 'lecturers') return lecturers;
+    if (categoryId === 'subjects') return subjectsData?.subjects || [];
+    if (categoryId === 'lecturers') return lecturersData?.lecturers || [];
     return [];
   };
-
+  
   const items = getItems();
-  const filteredItems = items.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ('code' in item && item.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    ('department' in item && item.department.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const isLoading = categoryId === 'subjects' ? subjectsLoading : lecturersLoading;
 
   const handleItemToggle = (itemId: string) => {
     const newSelectedItems = selectedItems.includes(itemId)
@@ -56,8 +63,13 @@ export default function ItemSelection({ categoryId, categoryTitle, selectedItems
       </div>
 
       {/* Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-        {filteredItems.map((item) => {
+      {isLoading ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+          {items.map((item) => {
           const isSelected = selectedItems.includes(item.id);
           return (
             <div
@@ -93,8 +105,9 @@ export default function ItemSelection({ categoryId, categoryTitle, selectedItems
               </div>
             </div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
 
       {selectedItems.length > 0 && (
         <div className="mt-3 p-3 bg-purple-50 rounded-lg">

@@ -1,11 +1,33 @@
 import React from 'react';
 import { BarChart3, TrendingUp, Users, MessageSquare, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { analyticsApi } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
 
 export default function Dashboard() {
+  const { data: dashboardData, loading, error } = useApi(() => analyticsApi.getDashboard(), []);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <p className="text-red-700">Có lỗi xảy ra khi tải dữ liệu: {error}</p>
+        </div>
+      </div>
+    );
+  }
+  
   const stats = [
     {
       name: 'Tổng đánh giá',
-      value: '1,247',
+      value: dashboardData?.totalReviews?.toString() || '0',
       change: '+12%',
       changeType: 'increase',
       icon: MessageSquare,
@@ -13,7 +35,7 @@ export default function Dashboard() {
     },
     {
       name: 'Đã phê duyệt',
-      value: '1,089',
+      value: dashboardData?.approvedReviews?.toString() || '0',
       change: '+8%',
       changeType: 'increase',
       icon: CheckCircle,
@@ -21,7 +43,7 @@ export default function Dashboard() {
     },
     {
       name: 'Bị từ chối',
-      value: '158',
+      value: dashboardData?.rejectedReviews?.toString() || '0',
       change: '-12%',
       changeType: 'increase',
       icon: XCircle,
@@ -29,7 +51,7 @@ export default function Dashboard() {
     },
     {
       name: 'Điểm TB',
-      value: '4.2',
+      value: dashboardData?.averageRating?.toFixed(1) || '0.0',
       change: '+0.3',
       changeType: 'increase',
       icon: BarChart3,
@@ -37,14 +59,25 @@ export default function Dashboard() {
     }
   ];
 
-  const categoryStats = [
-    { name: 'Môn học', count: 324, percentage: 26, color: 'blue' },
-    { name: 'Giảng viên', count: 298, percentage: 24, color: 'green' },
-    { name: 'Cơ sở vật chất', count: 267, percentage: 21, color: 'purple' },
-    { name: 'Thư viện', count: 189, percentage: 15, color: 'orange' },
-    { name: 'Đăng ký học phần', count: 102, percentage: 8, color: 'pink' },
-    { name: 'Dịch vụ sinh viên', count: 67, percentage: 5, color: 'purple' }
-  ];
+  const categoryStats = dashboardData?.reviewsByCategory ? 
+    Object.entries(dashboardData.reviewsByCategory).map(([key, count], index) => {
+      const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo'];
+      const names = {
+        subjects: 'Môn học',
+        lecturers: 'Giảng viên',
+        facilities: 'Cơ sở vật chất',
+        library: 'Thư viện',
+        registration: 'Đăng ký học phần',
+        services: 'Dịch vụ sinh viên'
+      };
+      const total = Object.values(dashboardData.reviewsByCategory).reduce((sum, val) => sum + val, 0);
+      return {
+        name: names[key as keyof typeof names] || key,
+        count: count as number,
+        percentage: total > 0 ? Math.round((count as number / total) * 100) : 0,
+        color: colors[index % colors.length]
+      };
+    }) : [];
 
   const recentReviews = [
     {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Facebook, Chrome } from 'lucide-react';
+import { authApi } from '../../services/api';
+import { useApiMutation } from '../../hooks/useApi';
 
 interface LoginPageProps {
   onLogin: (user: any) => void;
@@ -11,22 +13,28 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [studentId, setStudentId] = useState('');
+  const { mutate: loginMutation, isSubmitting, error } = useApiMutation();
+  const { mutate: registerMutation } = useApiMutation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Mock role determination based on email domain
-    const isAdmin = email.includes('admin') || email.includes('ptit.edu.vn');
-    
-    const user = {
-      id: '1',
-      name: isLogin ? (isAdmin ? 'Admin PTIT' : 'Nguyễn Văn A') : name,
-      email,
-      studentId: isAdmin ? undefined : (isLogin ? 'B20DCCN001' : studentId),
-      role: isAdmin ? 'admin' : 'student',
-    };
-    
-    onLogin(user);
+    try {
+      if (isLogin) {
+        const response = await loginMutation(authApi.login, { email, password });
+        onLogin(response.data.user);
+      } else {
+        const response = await registerMutation(authApi.register, {
+          name,
+          email,
+          password,
+          studentId,
+        });
+        onLogin(response.data.user);
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -123,11 +131,18 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </div>
             </div>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-[1.02] shadow-lg"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}
+              {isSubmitting ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập' : 'Tạo tài khoản')}
             </button>
           </form>
 

@@ -1,32 +1,44 @@
 import React, { useState } from 'react';
 import { Search, Filter, Eye, Trash2, Calendar, Star, User } from 'lucide-react';
 import { Review } from '../../types';
-import { subjects, lecturers } from '../../data/mockData';
+import { reviewsApi, subjectsApi, lecturersApi } from '../../services/api';
+import { useApi, useApiMutation } from '../../hooks/useApi';
 
 interface ReviewManagementProps {
-  reviews: Review[];
   onDeleteReview: (reviewId: string) => void;
 }
 
-export default function ReviewManagement({ reviews, onDeleteReview }: ReviewManagementProps) {
+export default function ReviewManagement({ onDeleteReview }: ReviewManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  
+  const { data: reviewsData, loading, error, refetch } = useApi(
+    () => reviewsApi.getReviews({
+      search: searchTerm || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+    }),
+    [searchTerm, statusFilter]
+  );
+  
+  const { data: subjectsData } = useApi(() => subjectsApi.getSubjects(), []);
+  const { data: lecturersData } = useApi(() => lecturersApi.getLecturers(), []);
+  const { mutate: deleteReview } = useApiMutation();
+  
+  const reviews = reviewsData?.reviews || [];
+  const subjects = subjectsData?.subjects || [];
+  const lecturers = lecturersData?.lecturers || [];
 
-  const filteredReviews = reviews.filter(review => {
-    const matchesSearch = review.freeComment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || review.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleDelete = (reviewId: string) => {
+  const handleDelete = async (reviewId: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) {
-      onDeleteReview(reviewId);
-      setSelectedReview(null);
+      try {
+        await deleteReview(reviewsApi.deleteReview, reviewId);
+        onDeleteReview(reviewId);
+        setSelectedReview(null);
+        refetch(); // Refresh the list
+      } catch (error) {
+        console.error('Error deleting review:', error);
+      }
     }
   };
 
@@ -98,9 +110,21 @@ export default function ReviewManagement({ reviews, onDeleteReview }: ReviewMana
           </div>
         </div>
 
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center mb-8">
+            <p className="text-red-700">Có lỗi xảy ra khi tải dữ liệu: {error}</p>
+          </div>
+        )}
+
         {/* Reviews List */}
         <div className="space-y-6">
-          {filteredReviews.map((review) => (
+          {reviews.map((review) => (
             <div key={review.id} className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">

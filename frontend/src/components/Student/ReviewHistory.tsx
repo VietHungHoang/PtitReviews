@@ -1,12 +1,21 @@
 import React from 'react';
 import { Calendar, Star, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Review } from '../../types';
+import { reviewsApi } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
 
 interface ReviewHistoryProps {
-  reviews: Review[];
+  userId: string;
 }
 
-export default function ReviewHistory({ reviews }: ReviewHistoryProps) {
+export default function ReviewHistory({ userId }: ReviewHistoryProps) {
+  const { data: reviewsData, loading, error } = useApi(
+    () => reviewsApi.getUserReviews(userId),
+    [userId]
+  );
+  
+  const reviews = reviewsData?.reviews || [];
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved':
@@ -48,8 +57,20 @@ export default function ReviewHistory({ reviews }: ReviewHistoryProps) {
           <p className="text-gray-600">Xem lại tất cả các đánh giá bạn đã gửi</p>
         </div>
 
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+            <p className="text-red-700">Có lỗi xảy ra khi tải dữ liệu: {error}</p>
+          </div>
+        )}
+
         <div className="space-y-6">
-          {reviews.length === 0 ? (
+          {!loading && reviews.length === 0 ? (
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 shadow-lg border border-white/20 text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-purple-600" />

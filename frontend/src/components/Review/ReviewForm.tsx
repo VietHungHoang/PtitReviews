@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Star, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { CategoryInfo } from '../../types';
 import ItemSelection from './ItemSelection';
+import { reviewsApi } from '../../services/api';
+import { useApiMutation } from '../../hooks/useApi';
 
 interface ReviewFormProps {
   selectedCategories: CategoryInfo[];
@@ -17,6 +19,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
   const [hasUsedService, setHasUsedService] = useState<Record<string, boolean>>({});
   const [showNotification, setShowNotification] = useState(false);
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
+  const { mutate: createReview, isSubmitting } = useApiMutation();
 
   const handleRatingChange = (categoryId: string, rating: number) => {
     setRatings(prev => ({ ...prev, [categoryId]: rating }));
@@ -34,7 +37,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
     setSelectedItems(prev => ({ ...prev, [categoryId]: items }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
@@ -56,30 +59,37 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
       return;
     }
 
-    const review = {
-      categories: selectedCategories.map(cat => cat.id),
-      selectedItems: Object.values(selectedItems).flat(),
-      rating: Math.round(Object.values(ratings).reduce((sum, rating) => sum + rating, 0) / Object.values(ratings).length),
-      freeComment: Object.values(comments).join('\n\n'),
-      generalFeedback,
-      hasUsedService: Object.values(hasUsedService).some(used => used),
-      additionalAnswers: {}
-    };
+    try {
+      const reviewData = {
+        categories: selectedCategories.map(cat => cat.id),
+        selectedItems: Object.values(selectedItems).flat(),
+        rating: Math.round(Object.values(ratings).reduce((sum, rating) => sum + rating, 0) / Object.values(ratings).length),
+        freeComment: Object.values(comments).join('\n\n'),
+        generalFeedback,
+        hasUsedService: Object.values(hasUsedService).some(used => used),
+        additionalAnswers: {}
+      };
 
-    onSubmit(review);
-    setNotificationType('success');
-    setShowNotification(true);
-    
-    // Reset form after successful submission
-    setTimeout(() => {
-      setShowNotification(false);
-      setRatings({});
-      setComments({});
-      setSelectedItems({});
-      setGeneralFeedback('');
-      setHasUsedService({});
-      onBack();
-    }, 2000);
+      await createReview(reviewsApi.createReview, reviewData);
+      
+      setNotificationType('success');
+      setShowNotification(true);
+      
+      // Reset form after successful submission
+      setTimeout(() => {
+        setShowNotification(false);
+        setRatings({});
+        setComments({});
+        setSelectedItems({});
+        setGeneralFeedback('');
+        setHasUsedService({});
+        onBack();
+      }, 2000);
+    } catch (error) {
+      setNotificationType('error');
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    }
   };
 
   const renderStars = (categoryId: string, currentRating: number) => {
@@ -290,10 +300,11 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
               </button>
               <button
                 type="submit"
-                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="w-5 h-5" />
-                <span>Gửi đánh giá</span>
+                <span>{isSubmitting ? 'Đang gửi...' : 'Gửi đánh giá'}</span>
               </button>
             </div>
           </form>

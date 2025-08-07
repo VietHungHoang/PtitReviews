@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Review, CategoryInfo, NotificationProps } from './types';
-import { mockReviews } from './data/mockData';
+import { authApi } from './services/api';
 import Header from './components/Layout/Header';
 import LoginPage from './components/Auth/LoginPage';
 import CategorySelection from './components/Categories/CategorySelection';
@@ -15,7 +15,6 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState('categories');
   const [selectedCategories, setSelectedCategories] = useState<CategoryInfo[]>([]);
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
   const [notification, setNotification] = useState<NotificationProps | null>(null);
 
   const handleLogin = (userData: User) => {
@@ -23,7 +22,12 @@ function App() {
     setCurrentPage(userData.role === 'admin' ? 'dashboard' : 'categories');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     setUser(null);
     setCurrentPage('login');
     setSelectedCategories([]);
@@ -35,18 +39,6 @@ function App() {
   };
 
   const handleSubmitReview = (reviewData: any) => {
-    const newReview: Review = {
-      ...reviewData,
-      id: Date.now().toString(),
-      userId: user!.id,
-      userName: user!.name,
-      studentId: user!.studentId,
-      createdAt: new Date(),
-      status: Math.random() > 0.3 ? 'approved' : 'rejected', // Random approval for demo
-      rejectionReason: reviewData.status === 'rejected' ? 'Nội dung không phù hợp với tiêu chuẩn đánh giá' : undefined
-    };
-    
-    setReviews(prev => [newReview, ...prev]);
     setNotification({
       type: 'success',
       title: 'Đánh giá đã được gửi!',
@@ -70,8 +62,6 @@ function App() {
   };
 
   const handleDeleteReview = (reviewId: string) => {
-    setReviews(prev => prev.filter(review => review.id !== reviewId));
-    
     setNotification({
       type: 'success',
       title: 'Đã xóa đánh giá',
@@ -79,9 +69,6 @@ function App() {
       onClose: () => setNotification(null)
     });
   };
-
-  // Get user's reviews
-  const userReviews = reviews.filter(review => review.userId === user?.id);
 
   if (!user) {
     return <LoginPage onLogin={handleLogin} />;
@@ -111,7 +98,7 @@ function App() {
           )}
           
           {currentPage === 'history' && (
-            <ReviewHistory reviews={userReviews} />
+            <ReviewHistory userId={user.id} />
           )}
         </>
       )}
@@ -124,7 +111,6 @@ function App() {
           
           {currentPage === 'reviews' && (
             <ReviewManagement 
-              reviews={reviews}
               onDeleteReview={handleDeleteReview}
             />
           )}
