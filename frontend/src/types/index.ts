@@ -33,11 +33,10 @@ export type ReviewCategory =
   | 'services';
 
 export interface CategoryInfo {
-  id: ReviewCategory;
-  title: string;
+  id: number;
+  name: string;
   description: string;
   icon: string;
-  questions: string[];
 }
 
 export interface Analytics {

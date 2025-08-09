@@ -5,13 +5,13 @@ import { subjectsApi, lecturersApi } from '../../services/api';
 import { useApi } from '../../hooks/useApi';
 
 interface ItemSelectionProps {
-  categoryId: string;
-  categoryTitle: string;
-  selectedItems: string[];
-  onItemsChange: (items: string[]) => void;
+  categoryId: number;
+  categoryName: string;
+  selectedItems: number[];
+  onItemsChange: (items: number[]) => void;
 }
 
-export default function ItemSelection({ categoryId, categoryTitle, selectedItems, onItemsChange }: ItemSelectionProps) {
+export default function ItemSelection({ categoryId, categoryName, selectedItems, onItemsChange }: ItemSelectionProps) {
   const [searchTerm, setSearchTerm] = useState('');
   
   const { data: subjectsData, loading: subjectsLoading } = useApi(
@@ -25,29 +25,29 @@ export default function ItemSelection({ categoryId, categoryTitle, selectedItems
   );
 
   const getItems = () => {
-    if (categoryId === 'subjects') return subjectsData?.subjects || [];
-    if (categoryId === 'lecturers') return lecturersData?.lecturers || [];
+    if (categoryId === 1) return subjectsData?.subjects || [];
+    if (categoryId === 2) return lecturersData?.lecturers || [];
     return [];
   };
   
   const items = getItems();
-  const isLoading = categoryId === 'subjects' ? subjectsLoading : lecturersLoading;
+  const isLoading = categoryId === 1 ? subjectsLoading : lecturersLoading;
 
-  const handleItemToggle = (itemId: string) => {
+  const handleItemToggle = (itemId: number) => {
     const newSelectedItems = selectedItems.includes(itemId)
       ? selectedItems.filter(id => id !== itemId)
       : [...selectedItems, itemId];
     onItemsChange(newSelectedItems);
   };
 
-  if (categoryId !== 'subjects' && categoryId !== 'lecturers') {
+  if (categoryId !== 1 && categoryId !== 2) {
     return null;
   }
 
   return (
     <div className="mb-6">
       <label className="block text-sm font-medium text-gray-700 mb-3">
-        Chọn {categoryTitle.toLowerCase()} bạn muốn đánh giá (có thể chọn nhiều):
+        Chọn {categoryName.toLowerCase()} bạn muốn đánh giá (có thể chọn nhiều):
       </label>
       
       {/* Search */}
@@ -55,7 +55,7 @@ export default function ItemSelection({ categoryId, categoryTitle, selectedItems
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
         <input
           type="text"
-          placeholder={`Tìm kiếm ${categoryTitle.toLowerCase()}...`}
+          placeholder={`Tìm kiếm ${categoryName.toLowerCase()}...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
@@ -112,7 +112,7 @@ export default function ItemSelection({ categoryId, categoryTitle, selectedItems
       {selectedItems.length > 0 && (
         <div className="mt-3 p-3 bg-purple-50 rounded-lg">
           <p className="text-sm text-purple-700">
-            Đã chọn {selectedItems.length} {categoryTitle.toLowerCase()}
+            Đã chọn {selectedItems.length} {categoryName.toLowerCase()}
           </p>
         </div>
       )}

@@ -7,7 +7,7 @@ interface UseApiState<T> {
 }
 
 export function useApi<T>(
-  apiCall: () => Promise<{ status: string; data: T; message: string }>,
+  apiCall: () => Promise<{ status: number; data: T; message: string }>,
   dependencies: any[] = []
 ) {
   const [state, setState] = useState<UseApiState<T>>({
@@ -21,7 +21,7 @@ export function useApi<T>(
     
     try {
       const response = await apiCall();
-      if (response.status === 'success') {
+      if (response.status === 200) {
         setState({
           data: response.data,
           loading: false,

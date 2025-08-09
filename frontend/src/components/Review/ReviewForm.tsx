@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Star, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { CategoryInfo } from '../../types';
 import ItemSelection from './ItemSelection';
@@ -6,34 +7,50 @@ import { reviewsApi } from '../../services/api';
 import { useApiMutation } from '../../hooks/useApi';
 
 interface ReviewFormProps {
-  selectedCategories: CategoryInfo[];
   onSubmit: (review: any) => void;
-  onBack: () => void;
 }
 
-export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSubmit, onBack }) => {
+export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
+  const navigate = useNavigate();
+  
+  // Get selected categories from sessionStorage
+  const getSelectedCategories = (): CategoryInfo[] => {
+    const stored = sessionStorage.getItem('selectedCategories');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    // If no categories selected, redirect back to home
+    navigate('/');
+    return [];
+  };
+  
+  const selectedCategories = getSelectedCategories();
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
-  const [selectedItems, setSelectedItems] = useState<Record<string, string[]>>({});
+  const [selectedItems, setSelectedItems] = useState<Record<number, number[]>>({});
   const [generalFeedback, setGeneralFeedback] = useState('');
   const [hasUsedService, setHasUsedService] = useState<Record<string, boolean>>({});
   const [showNotification, setShowNotification] = useState(false);
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
   const { mutate: createReview, isSubmitting } = useApiMutation();
 
-  const handleRatingChange = (categoryId: string, rating: number) => {
+  const handleBack = () => {
+    navigate('/');
+  };
+
+  const handleRatingChange = (categoryId: number, rating: number) => {
     setRatings(prev => ({ ...prev, [categoryId]: rating }));
   };
 
-  const handleCommentChange = (categoryId: string, comment: string) => {
+  const handleCommentChange = (categoryId: number, comment: string) => {
     setComments(prev => ({ ...prev, [categoryId]: comment }));
   };
 
-  const handleServiceUsageChange = (categoryId: string, hasUsed: boolean) => {
+  const handleServiceUsageChange = (categoryId: number, hasUsed: boolean) => {
     setHasUsedService(prev => ({ ...prev, [categoryId]: hasUsed }));
   };
 
-  const handleItemsChange = (categoryId: string, items: string[]) => {
+  const handleItemsChange = (categoryId: number, items: number[]) => {
     setSelectedItems(prev => ({ ...prev, [categoryId]: items }));
   };
 
@@ -83,7 +100,8 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
         setSelectedItems({});
         setGeneralFeedback('');
         setHasUsedService({});
-        onBack();
+        sessionStorage.removeItem('selectedCategories');
+        navigate('/');
       }, 2000);
     } catch (error) {
       setNotificationType('error');
@@ -92,7 +110,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
     }
   };
 
-  const renderStars = (categoryId: string, currentRating: number) => {
+  const renderStars = (categoryId: number, currentRating: number) => {
     return (
       <div className="flex space-x-1">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -142,14 +160,14 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
         <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
           <div className="mb-8">
             <button
-              onClick={onBack}
+              onClick={handleBack}
               className="text-purple-600 hover:text-purple-800 font-medium mb-4 transition-colors duration-200"
             >
               ← Quay lại chọn chủ đề
             </button>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Đánh giá chi tiết</h1>
             <p className="text-gray-600">
-              Chia sẻ trải nghiệm của bạn về {selectedCategories.map(cat => cat.title).join(', ')}
+              Chia sẻ trải nghiệm của bạn về {selectedCategories.map(cat => cat.name).join(', ')}
             </p>
           </div>
 
@@ -158,13 +176,13 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
               <div key={category.id} className="bg-white/50 rounded-xl p-6 border border-purple-100">
                 <div className="flex items-center mb-4">
                   <div className="text-2xl mr-3">{category.icon}</div>
-                  <h3 className="text-xl font-semibold text-gray-800">{category.title}</h3>
+                  <h3 className="text-xl font-semibold text-gray-800">{category.name}</h3>
                 </div>
 
                 {/* Service Usage Check */}
                 <div className="mb-6">
                   <p className="text-sm font-medium text-gray-700 mb-3">
-                    Bạn đã sử dụng/trải nghiệm {category.title.toLowerCase()} chưa?
+                    Bạn đã sử dụng/trải nghiệm {category.name.toLowerCase()} chưa?
                   </p>
                   <div className="flex space-x-4">
                     <label className="flex items-center">
@@ -190,12 +208,14 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
                   </div>
                 </div>
 
+                
+
                 {hasUsedService[category.id] === true && (
                   <>
                     {/* Item Selection for subjects/lecturers */}
                     <ItemSelection
                       categoryId={category.id}
-                      categoryTitle={category.title}
+                      categoryName={category.name}
                       selectedItems={selectedItems[category.id] || []}
                       onItemsChange={(items) => handleItemsChange(category.id, items)}
                     />
@@ -221,7 +241,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
                       <textarea
                         value={comments[category.id] || ''}
                         onChange={(e) => handleCommentChange(category.id, e.target.value)}
-                        placeholder={`Chia sẻ trải nghiệm của bạn về ${category.title.toLowerCase()}...`}
+                        placeholder={`Chia sẻ trải nghiệm của bạn về ${category.name.toLowerCase()}...`}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                         rows={4}
                       />
@@ -235,7 +255,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
                 {hasUsedService[category.id] === false && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-sm text-yellow-800">
-                      <strong>Lưu ý:</strong> Bạn chưa trải nghiệm {category.title.toLowerCase()}, 
+                      <strong>Lưu ý:</strong> Bạn chưa trải nghiệm {category.name.toLowerCase()}, 
                       nhưng vẫn có thể đánh giá dựa trên thông tin bạn biết. Tuy nhiên, chúng tôi khuyến khích 
                       bạn trải nghiệm trực tiếp để có đánh giá chính xác nhất.
                     </p>
@@ -244,7 +264,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
                     <div className="mt-4">
                       <ItemSelection
                         categoryId={category.id}
-                        categoryTitle={category.title}
+                        categoryName={category.name}
                         selectedItems={selectedItems[category.id] || []}
                         onItemsChange={(items) => handleItemsChange(category.id, items)}
                       />
@@ -263,7 +283,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
                         <textarea
                           value={comments[category.id] || ''}
                           onChange={(e) => handleCommentChange(category.id, e.target.value)}
-                          placeholder={`Chia sẻ những gì bạn biết về ${category.title.toLowerCase()}...`}
+                          placeholder={`Chia sẻ những gì bạn biết về ${category.name.toLowerCase()}...`}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                           rows={4}
                         />
@@ -293,7 +313,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ selectedCategories, onSu
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
-                onClick={onBack}
+                onClick={handleBack}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
                 Hủy

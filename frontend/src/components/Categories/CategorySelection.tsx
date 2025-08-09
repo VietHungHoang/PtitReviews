@@ -1,12 +1,10 @@
 import React from 'react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Building2, Library, Calendar, HelpCircle, ChevronRight } from 'lucide-react';
-import { categories } from '../../data/categories';
 import { CategoryInfo } from '../../types';
-
-interface CategorySelectionProps {
-  onSelectCategories: (categories: CategoryInfo[]) => void;
-}
+import { categoriesApi } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
 
 const iconMap = {
   BookOpen,
@@ -17,8 +15,12 @@ const iconMap = {
   HelpCircle,
 };
 
-export default function CategorySelection({ onSelectCategories }: CategorySelectionProps) {
+export default function CategorySelection() {
   const [selectedCategories, setSelectedCategories] = useState<CategoryInfo[]>([]);
+  const navigate = useNavigate();
+  
+  const { data: categoriesData, loading, error } = useApi(() => categoriesApi.getCategories(), []);
+  const categories = categoriesData || [];
 
   const handleCategoryToggle = (category: CategoryInfo) => {
     setSelectedCategories(prev => {
@@ -33,7 +35,9 @@ export default function CategorySelection({ onSelectCategories }: CategorySelect
 
   const handleContinue = () => {
     if (selectedCategories.length > 0) {
-      onSelectCategories(selectedCategories);
+      // Store selected categories in sessionStorage for the review page
+      sessionStorage.setItem('selectedCategories', JSON.stringify(selectedCategories));
+      navigate('/review');
     }
   };
 
@@ -49,7 +53,20 @@ export default function CategorySelection({ onSelectCategories }: CategorySelect
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center mb-8">
+            <p className="text-red-700">Có lỗi xảy ra khi tải danh sách chủ đề: {error}</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {categories.map((category) => {
             const IconComponent = iconMap[category.icon as keyof typeof iconMap];
             const isSelected = selectedCategories.some(c => c.id === category.id);
@@ -86,7 +103,7 @@ export default function CategorySelection({ onSelectCategories }: CategorySelect
                     ? 'text-purple-700' 
                     : 'text-gray-900 group-hover:text-purple-700'
                 }`}>
-                  {category.title}
+                  {category.name}
                 </h3>
                 
                 <p className="text-gray-600 leading-relaxed">
@@ -104,12 +121,13 @@ export default function CategorySelection({ onSelectCategories }: CategorySelect
             );
           })}
         </div>
+        )}
 
         {selectedCategories.length > 0 && (
           <div className="mt-12 text-center">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 inline-block">
               <p className="text-gray-600 mb-4">
-                Đã chọn {selectedCategories.length} chủ đề: {selectedCategories.map(c => c.title).join(', ')}
+                Đã chọn {selectedCategories.length} chủ đề: {selectedCategories.map(c => c.name).join(', ')}
               </p>
               <button
                 onClick={handleContinue}

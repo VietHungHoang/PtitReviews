@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { User, Review, CategoryInfo, NotificationProps } from './types';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { User, NotificationProps } from './types';
 import { authApi } from './services/api';
 import Header from './components/Layout/Header';
 import LoginPage from './components/Auth/LoginPage';
@@ -13,13 +14,44 @@ import ApiDocumentation from './components/Admin/ApiDocumentation';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState('categories');
-  const [selectedCategories, setSelectedCategories] = useState<CategoryInfo[]>([]);
   const [notification, setNotification] = useState<NotificationProps | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for existing auth token on app load
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          // You could add a /auth/me endpoint to verify token and get user info
+          // For now, we'll just assume token is valid
+          const mockUser = {
+            id: '1',
+            name: 'Current User',
+            email: 'user@ptit.edu.vn',
+            role: 'student' as const
+          };
+          setUser(mockUser);
+        } catch (error) {
+          localStorage.removeItem('authToken');
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, []);
 
   const handleLogin = (userData: User) => {
     setUser(userData);
-    setCurrentPage(userData.role === 'admin' ? 'dashboard' : 'categories');
+    // Redirect based on role
+    if (userData.role === 'admin') {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/');
+    }
   };
 
   const handleLogout = async () => {
@@ -29,13 +61,8 @@ function App() {
       console.error('Logout error:', error);
     }
     setUser(null);
-    setCurrentPage('login');
-    setSelectedCategories([]);
-  };
-
-  const handleSelectCategories = (categories: CategoryInfo[]) => {
-    setSelectedCategories(categories);
-    setCurrentPage('review');
+    localStorage.removeItem('authToken');
+    navigate('/login');
   };
 
   const handleSubmitReview = (reviewData: any) => {
@@ -45,20 +72,7 @@ function App() {
       message: 'Cảm ơn bạn đã gửi đánh giá. Hệ thống sẽ tự động xử lý và phê duyệt đánh giá của bạn.',
       onClose: () => setNotification(null)
     });
-    setCurrentPage('categories');
-    setSelectedCategories([]);
-  };
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page);
-    if (page !== 'review') {
-      setSelectedCategories([]);
-    }
-  };
-
-  const handleBackToCategories = () => {
-    setCurrentPage('categories');
-    setSelectedCategories([]);
+    navigate('/');
   };
 
   const handleDeleteReview = (reviewId: string) => {
@@ -70,56 +84,126 @@ function App() {
     });
   };
 
-  if (!user) {
-    return <LoginPage onLogin={handleLogin} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
   }
+
+  // Protected Route Component
+  const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+    
+    if (adminOnly && user.role !== 'admin') {
+      return <Navigate to="/" replace />;
+    }
+    
+    return <>{children}</>;
+  };
+
+  // Public Route Component (redirect if logged in)
+  const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+    if (user) {
+      return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/'} replace />;
+    }
+    return <>{children}</>;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header 
-        user={user} 
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        onLogout={handleLogout} 
-      />
-      
-      {user.role === 'student' && (
-        <>
-          {currentPage === 'categories' && (
-            <CategorySelection onSelectCategories={handleSelectCategories} />
-          )}
-          
-          {currentPage === 'review' && selectedCategories.length > 0 && (
-            <ReviewForm 
-              selectedCategories={selectedCategories}
-              onSubmit={handleSubmitReview}
-              onBack={handleBackToCategories}
-            />
-          )}
-          
-          {currentPage === 'history' && (
-            <ReviewHistory userId={user.id} />
-          )}
-        </>
+      {user && (
+        <Header 
+          user={user} 
+          currentPath={location.pathname}
+          onLogout={handleLogout} 
+        />
       )}
       
-      {user.role === 'admin' && (
-        <>
-          {currentPage === 'dashboard' && (
-            <Dashboard />
-          )}
-          
-          {currentPage === 'reviews' && (
-            <ReviewManagement 
-              onDeleteReview={handleDeleteReview}
-            />
-          )}
-          
-          {currentPage === 'api-docs' && (
-            <ApiDocumentation />
-          )}
-        </>
-      )}
+      <Routes>
+        {/* Public Routes */}
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <LoginPage onLogin={handleLogin} />
+            </PublicRoute>
+          } 
+        />
+
+        {/* Student Routes */}
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              {user?.role === 'admin' ? (
+                <Navigate to="/admin/dashboard" replace />
+              ) : (
+                <CategorySelection />
+              )}
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/review" 
+          element={
+            <ProtectedRoute>
+              <ReviewForm 
+                onSubmit={handleSubmitReview}
+              />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/history" 
+          element={
+            <ProtectedRoute>
+              <ReviewHistory userId={user?.id || ''} />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Admin Routes */}
+        <Route 
+          path="/admin/dashboard" 
+          element={
+            <ProtectedRoute adminOnly>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/reviews" 
+          element={
+            <ProtectedRoute adminOnly>
+              <ReviewManagement onDeleteReview={handleDeleteReview} />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/api-docs" 
+          element={
+            <ProtectedRoute adminOnly>
+              <ApiDocumentation />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Catch all route */}
+        <Route 
+          path="*" 
+          element={
+            <Navigate to={user ? (user.role === 'admin' ? '/admin/dashboard' : '/') : '/login'} replace />
+          } 
+        />
+      </Routes>
       
       {notification && (
         <Notification {...notification} />

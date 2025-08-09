@@ -1,8 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+import { CategoryInfo } from "../types";
+
+const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 // API Response interface
 interface ApiResponse<T> {
-  status: 'success' | 'error';
+  status: number;
   data: T;
   message: string;
 }
@@ -62,7 +64,7 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     });
     
-    if (response.status === 'success') {
+    if (response.status === 200) {
       setAuthToken(response.data.token);
     }
     
@@ -234,3 +236,21 @@ export const analyticsApi = {
 };
 
 export { getAuthToken, setAuthToken, removeAuthToken };
+
+// Categories API
+export const categoriesApi = {
+  getCategories: async () => {
+    return apiCall<CategoryInfo[]>('/categories');
+  },
+
+  getCategory: async (id: string) => {
+    return apiCall<{ category: any }>(`/categories/${id}`);
+  },
+
+  getCategoryInfo: async (categoryIds: number[]) => {
+    const query = categoryIds.map(id => `id=${id}`).join('&');
+    const url = `/categories?${query}`;
+    return apiCall<any[]>(url);
+  }
+
+};

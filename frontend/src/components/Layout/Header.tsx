@@ -1,20 +1,29 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { User, LogOut, BarChart3, Home, History, FileText, Server } from 'lucide-react';
 
 interface HeaderProps {
   user: any;
-  currentPage: string;
-  onNavigate: (page: string) => void;
+  currentPath: string;
   onLogout: () => void;
 }
 
-export default function Header({ user, currentPage, onNavigate, onLogout }: HeaderProps) {
+export default function Header({ user, currentPath, onLogout }: HeaderProps) {
+  const navigate = useNavigate();
+
+  const isActive = (path: string) => {
+    return currentPath === path;
+  };
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
+            <div 
+              className="flex items-center space-x-3 cursor-pointer"
+              onClick={() => navigate(user.role === 'admin' ? '/admin/dashboard' : '/')}
+            >
               <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">P</span>
               </div>
@@ -29,9 +38,9 @@ export default function Header({ user, currentPage, onNavigate, onLogout }: Head
                 {user.role === 'student' ? (
                   <>
                     <button
-                      onClick={() => onNavigate('categories')}
+                      onClick={() => navigate('/')}
                       className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
-                        currentPage === 'categories'
+                        isActive('/')
                           ? 'bg-purple-100 text-purple-700'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
@@ -40,9 +49,9 @@ export default function Header({ user, currentPage, onNavigate, onLogout }: Head
                       <span>Trang chủ</span>
                     </button>
                     <button
-                      onClick={() => onNavigate('history')}
+                      onClick={() => navigate('/history')}
                       className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
-                        currentPage === 'history'
+                        isActive('/history')
                           ? 'bg-purple-100 text-purple-700'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
@@ -54,9 +63,9 @@ export default function Header({ user, currentPage, onNavigate, onLogout }: Head
                 ) : (
                   <>
                     <button
-                      onClick={() => onNavigate('dashboard')}
+                      onClick={() => navigate('/admin/dashboard')}
                       className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
-                        currentPage === 'dashboard'
+                        isActive('/admin/dashboard')
                           ? 'bg-purple-100 text-purple-700'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
@@ -65,9 +74,9 @@ export default function Header({ user, currentPage, onNavigate, onLogout }: Head
                       <span>Dashboard</span>
                     </button>
                     <button
-                      onClick={() => onNavigate('reviews')}
+                      onClick={() => navigate('/admin/reviews')}
                       className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
-                        currentPage === 'reviews'
+                        isActive('/admin/reviews')
                           ? 'bg-purple-100 text-purple-700'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
@@ -76,9 +85,9 @@ export default function Header({ user, currentPage, onNavigate, onLogout }: Head
                       <span>Quản lý đánh giá</span>
                     </button>
                     <button
-                      onClick={() => onNavigate('api-docs')}
+                      onClick={() => navigate('/admin/api-docs')}
                       className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
-                        currentPage === 'api-docs'
+                        isActive('/admin/api-docs')
                           ? 'bg-purple-100 text-purple-700'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
