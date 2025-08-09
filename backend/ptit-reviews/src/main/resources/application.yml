@@ -1,0 +1,19 @@
+spring:
+    application:
+        name: ptit-reviews
+    mvc:
+        servlet:
+            path: /api/v1
+    datasource:
+        url: jdbc:mysql://localhost:3306/ptit_reviews?useSSL=false&serverTimezone=UTC&createDatabaseIfNotExist=true
+        username: root
+        password: root
+        drive-class-name: com.mysql.cj.jdbc.Driver
+    jpa:
+        hibernate:
+            ddl-auto: update
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.MySQL8Dialect
+                format_sql: true
+        show-sql: true
