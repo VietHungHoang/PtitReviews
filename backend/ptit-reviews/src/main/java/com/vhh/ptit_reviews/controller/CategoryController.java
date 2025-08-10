@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.vhh.ptit_reviews.domain.response.ApiResponse;
+import com.vhh.ptit_reviews.domain.response.CategoryInfoResponse;
 import com.vhh.ptit_reviews.domain.response.CategoryResponse;
 import com.vhh.ptit_reviews.service.CategoryService;
 
@@ -26,9 +27,15 @@ public class CategoryController {
         return ResponseEntity.ok(response); 
     }    
 
-    @GetMapping("")
-    public ResponseEntity<?> getCategoryInfoByIds(@RequestParam List<Integer> id) {
-        
+    @GetMapping("/info")
+    public ResponseEntity<?> getCategoryInfoByIds(@RequestParam List<Long> ids) {
+        List<CategoryInfoResponse> categoryInfoResponses = categoryService.getCategoryInfoByIds(ids);
+        ApiResponse<List<CategoryInfoResponse>> response = ApiResponse.<List<CategoryInfoResponse>>builder()
+            .status(200)
+            .data(categoryInfoResponses)
+            .message("Get category info successfully")
+            .build();
+        return ResponseEntity.ok(response);
     }
 
 }

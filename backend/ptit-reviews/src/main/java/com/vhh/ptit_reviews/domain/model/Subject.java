@@ -1,18 +1,34 @@
-// package com.vhh.ptit_reviews.domain.model;
+package com.vhh.ptit_reviews.domain.model;
 
-// import jakarta.persistence.*;
-// import lombok.*;
+import java.time.LocalDateTime;
 
-// @Entity
-// @Table(name = "subjects")
-// @Data
-// @NoArgsConstructor
-// @AllArgsConstructor
-// @Builder
-// public class Subject {
-//     @Id
-//     @GeneratedValue(strategy = GenerationType.IDENTITY)
-//     private Long id;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-//     private String name;
-// }
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "subjects")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Subject {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    private String code;
+    private int credits;
+    private String semester;
+
+    @ManyToOne
+    @JoinColumn(name = "subject_category_id")
+    private SubjectCategory subjectCategory;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+}

@@ -1,24 +1,42 @@
-// package com.vhh.ptit_reviews.domain.model;
+package com.vhh.ptit_reviews.domain.model;
 
-// import jakarta.persistence.Entity;
-// import jakarta.persistence.GeneratedValue;
-// import jakarta.persistence.GenerationType;
-// import jakarta.persistence.Id;
-// import jakarta.persistence.Table;
-// import lombok.AllArgsConstructor;
-// import lombok.Builder;
-// import lombok.Data;
-// import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
-// @Entity
-// @Table(name = "answers")
-// @Data
-// @NoArgsConstructor
-// @AllArgsConstructor
-// @Builder
-// public class Answer {
-//     @Id
-//     @GeneratedValue(strategy = GenerationType.IDENTITY)
-//     private Long id;
-//     private boolean answer;
-// }
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "answers")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Answer {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String content;
+    private boolean isCorrect;
+
+    @ManyToOne
+    @JoinColumn(name = "question_id")
+    private Question question;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+}

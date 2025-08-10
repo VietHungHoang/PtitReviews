@@ -32,11 +32,46 @@ export type ReviewCategory =
   | 'registration'
   | 'services';
 
-export interface CategoryInfo {
+export interface Category {
   id: number;
   name: string;
   description: string;
   icon: string;
+}
+
+export interface Answer {
+  id: number;
+  content: string;
+  correct: boolean;
+}
+
+export interface Question {
+  id: number;
+  content: string;
+  answers: Answer[];
+}
+
+export interface Lecturer {
+  id: number;
+  name: string;
+  department: string;
+  specialization: string;
+}
+
+export interface Subject {
+  id: number;
+  name: string;
+  code: string;
+  credits: number;
+  semester: string;
+}
+
+export interface CategoryInfo {
+  categoryId: number;
+  categoryName: string;
+  questions: Question[];
+  lecturers: Lecturer[];
+  subjects: Subject[];
 }
 
 export interface Analytics {
@@ -56,19 +91,4 @@ export interface NotificationProps {
   title: string;
   message: string;
   onClose: () => void;
-}
-
-export interface Subject {
-  id: string;
-  name: string;
-  code: string;
-  credits: number;
-  semester: string;
-}
-
-export interface Lecturer {
-  id: string;
-  name: string;
-  department: string;
-  specialization: string;
 }

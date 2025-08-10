@@ -11,10 +11,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "categories")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "dtype")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@DiscriminatorValue("Category")
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +30,9 @@ public class Category {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Question> questions;
 
 
     // @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)

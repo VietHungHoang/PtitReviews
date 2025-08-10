@@ -15,18 +15,14 @@ export default function ItemSelection({ categoryId, categoryName, selectedItems,
   const [searchTerm, setSearchTerm] = useState('');
   
   const { data: subjectsData, loading: subjectsLoading } = useApi(
-    () => subjectsApi.getSubjects({ search: searchTerm }),
-    [searchTerm]
-  );
+    () => subjectsApi.getSubjects());
   
   const { data: lecturersData, loading: lecturersLoading } = useApi(
-    () => lecturersApi.getLecturers({ search: searchTerm }),
-    [searchTerm]
-  );
+    () => lecturersApi.getLecturers());
 
   const getItems = () => {
-    if (categoryId === 1) return subjectsData?.subjects || [];
-    if (categoryId === 2) return lecturersData?.lecturers || [];
+    if (categoryId === 1) return subjectsData || [];
+    if (categoryId === 2) return lecturersData || [];
     return [];
   };
   

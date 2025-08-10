@@ -2,7 +2,7 @@ import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Users, Building2, Library, Calendar, HelpCircle, ChevronRight } from 'lucide-react';
-import { CategoryInfo } from '../../types';
+import { Category } from '../../types';
 import { categoriesApi } from '../../services/api';
 import { useApi } from '../../hooks/useApi';
 
@@ -16,13 +16,13 @@ const iconMap = {
 };
 
 export default function CategorySelection() {
-  const [selectedCategories, setSelectedCategories] = useState<CategoryInfo[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const navigate = useNavigate();
   
   const { data: categoriesData, loading, error } = useApi(() => categoriesApi.getCategories(), []);
   const categories = categoriesData || [];
 
-  const handleCategoryToggle = (category: CategoryInfo) => {
+  const handleCategoryToggle = (category: Category) => {
     setSelectedCategories(prev => {
       const isSelected = prev.some(c => c.id === category.id);
       if (isSelected) {

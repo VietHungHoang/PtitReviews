@@ -1,6 +1,6 @@
-import { CategoryInfo } from '../types';
+import { Category } from '../types';
 
-export const categories: CategoryInfo[] = [
+export const categories: Category[] = [
   {
     id: 'subjects',
     title: 'Môn học',

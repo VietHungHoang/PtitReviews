@@ -1,7 +1,5 @@
 package com.vhh.ptit_reviews.domain.response;
 
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,8 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
-public class QuestionResponse {
+public class LecturerResponse {
     private Long id;
-    private String content;
-    private List<AnswerResponse> answers;
+    private String name;
+    private String department;
+    private String specialization;
 }

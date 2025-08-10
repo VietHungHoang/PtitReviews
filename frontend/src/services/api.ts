@@ -1,4 +1,4 @@
-import { CategoryInfo } from "../types";
+import { Category, CategoryInfo, Lecturer, Subject } from "../types";
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
@@ -22,7 +22,7 @@ const removeAuthToken = (): void => {
   localStorage.removeItem('authToken');
 };
 
-// Generic API call function
+// Generic API call function  
 const apiCall = async <T>(
   endpoint: string,
   options: RequestInit = {}
@@ -147,50 +147,18 @@ export const reviewsApi = {
 
 // Subjects API
 export const subjectsApi = {
-  getSubjects: async (params?: {
-    search?: string;
-    semester?: string;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-    
-    const endpoint = `/subjects${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return apiCall<{ subjects: any[] }>(endpoint);
-  },
-
-  getSubject: async (id: string) => {
-    return apiCall<{ subject: any }>(`/subjects/${id}`);
-  },
+  getSubjects: async () => {
+    const endpoint = `/subjects`;
+    return apiCall<Subject[]>(endpoint);
+  }
 };
 
 // Lecturers API
 export const lecturersApi = {
-  getLecturers: async (params?: {
-    search?: string;
-    department?: string;
-  }) => {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-    
-    const endpoint = `/lecturers${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return apiCall<{ lecturers: any[] }>(endpoint);
-  },
-
-  getLecturer: async (id: string) => {
-    return apiCall<{ lecturer: any }>(`/lecturers/${id}`);
-  },
+  getLecturers: async () => {
+    const endpoint = `/lecturers`;
+    return apiCall<Lecturer[]>(endpoint);
+  }
 };
 
 // Analytics API
@@ -240,7 +208,7 @@ export { getAuthToken, setAuthToken, removeAuthToken };
 // Categories API
 export const categoriesApi = {
   getCategories: async () => {
-    return apiCall<CategoryInfo[]>('/categories');
+    return apiCall<Category[]>('/categories');
   },
 
   getCategory: async (id: string) => {
@@ -248,9 +216,10 @@ export const categoriesApi = {
   },
 
   getCategoryInfo: async (categoryIds: number[]) => {
-    const query = categoryIds.map(id => `id=${id}`).join('&');
-    const url = `/categories?${query}`;
-    return apiCall<any[]>(url);
+    const query = `ids=${categoryIds.join(',')}`;
+    const url = `/categories/info?${query}`;
+    return apiCall<CategoryInfo[]>(url);
   }
+
 
 };
