@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Send, CheckCircle, AlertCircle } from 'lucide-react';
-import { Answer, Category, CategoryRequest, QuestionRequest, ReviewRequest } from '../../types';
+import { Answer, Category, CategoryRequest, QuestionRequest, ReviewRequest, ReviewCreateResponse } from '../../types';
 import ItemSelection from './ItemSelection';
 import { categoriesApi, reviewsApi } from '../../services/api';
 import { useApi, useApiMutation } from '../../hooks/useApi';
@@ -33,9 +33,10 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, Answer>>({});
   const [showNotification, setShowNotification] = useState(false);
   const [notificationType, setNotificationType] = useState<'success' | 'error'>('success');
-  const { mutate: createReview, isSubmitting } = useApiMutation();
+  const { mutate: createReview, isSubmitting } = useApiMutation<ReviewCreateResponse, ReviewRequest>();
+  const [aiErrors, setAiErrors] = useState<string[]>([]);
 
-  const { data: categoriesData, loading, error } = useApi(() => categoriesApi.getCategoryInfo(selectedCategories.map(c => c.id)));
+  const { data: categoriesData } = useApi(() => categoriesApi.getCategoryInfo(selectedCategories.map(c => c.id)));
   const categoryInfos = categoriesData || [];
   for (const cat of categoryInfos) {
     cat.categoryName = selectedCategories.find(c => c.id === cat.categoryId)?.name || '';
@@ -83,7 +84,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
       return;
     }
 
-    try {
+  try {
     const categoryRequests: CategoryRequest[] = [];
      for(const cat of categoryInfos) {
         const questionRequests: QuestionRequest[] = [];
@@ -108,8 +109,26 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
         categories: categoryRequests
     }
 
-      await createReview(reviewsApi.createReview, reviewData);
-      
+      const res = await createReview(reviewsApi.createReview, reviewData);
+      const errors = (res.data && (res.data as any).errors ? (res.data as any).errors : []) as string[];
+
+      const errorMap: Record<string, string> = {
+        TOO_SHORT: 'Nội dung quá ngắn',
+        BIASED: 'Nội dung thiên lệch/cực đoan',
+        NON_MEANINGFUL: 'Nội dung không có ý nghĩa',
+        ONLY_SYMBOLS: 'Chỉ toàn ký tự đặc biệt hoặc số',
+      };
+
+      const humanErrors = errors.filter(e => e !== 'NONE').map(e => errorMap[e] || e);
+
+      if (humanErrors.length > 0) {
+        setAiErrors(humanErrors);
+        setNotificationType('error');
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+        return;
+      }
+
       setNotificationType('success');
       setShowNotification(true);
       
@@ -124,10 +143,23 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
         sessionStorage.removeItem('selectedCategories');
         navigate('/');
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
+      const errors = (error?.data && (error.data as any).errors ? (error.data as any).errors : []) as string[];
+      const errorMap: Record<string, string> = {
+        TOO_SHORT: 'Nội dung quá ngắn',
+        BIASED: 'Nội dung thiên lệch/cực đoan',
+        NON_MEANINGFUL: 'Nội dung không có ý nghĩa',
+        ONLY_SYMBOLS: 'Chỉ toàn ký tự đặc biệt hoặc số',
+      };
+      const humanErrors = errors.filter(e => e !== 'NONE').map(e => errorMap[e] || e);
+      if (humanErrors.length > 0) {
+        setAiErrors(humanErrors);
+      } else {
+        setAiErrors(['Có lỗi xảy ra, vui lòng thử lại.']);
+      }
       setNotificationType('error');
       setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
+      setTimeout(() => setShowNotification(false), 5000);
     }
   };
 
@@ -169,8 +201,10 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
             )}
             <span className="font-medium">
               {notificationType === 'success' 
-                ? 'Đánh giá đã được gửi thành công!' 
-                : 'Vui lòng điền đầy đủ thông tin và đảm bảo nhận xét ít nhất 10 ký tự!'
+                ? 'Đánh giá đã được gửi thành công!'
+                : aiErrors.length > 0
+                  ? `Có lỗi: ${aiErrors.join(', ')}`
+                  : 'Vui lòng điền đầy đủ thông tin và đảm bảo nhận xét ít nhất 10 ký tự!'
               }
             </span>
           </div>

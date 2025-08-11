@@ -10,9 +10,9 @@ public class ReviewMapper {
         return ReviewResponse.builder()
                 .id(review.getId())
                 .commonReview(review.getCommonReview())
-                .status(review.getStatus() != null ? review.getStatus().name() : null)
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
+                .errors(null)
                 .build();
     }
 }

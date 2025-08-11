@@ -35,6 +35,4 @@ public class Review {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @Enumerated(EnumType.STRING)
-    private ReviewStatus status; 
 }

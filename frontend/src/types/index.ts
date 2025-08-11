@@ -31,8 +31,6 @@ export interface Review {
   hasUsedService: boolean;
   additionalAnswers: Record<string, string>;
   createdAt: Date;
-  status: 'approved' | 'rejected';
-  rejectionReason?: string;
 }
 
 export type ReviewCategory = 
@@ -120,4 +118,31 @@ export interface CategoryRequest {
 export interface QuestionRequest {
   id: number;
   answerId: number;
+}
+
+// Backend ReviewResponse for createReview API
+export interface ReviewCreateResponse {
+  id: number | null;
+  commonReview: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  errors: string[];
+}
+
+// Student review history
+export interface CategoryReviewHistory {
+  name: string;
+  rate: number;
+  comment: string;
+}
+
+export interface ReviewHistoryItem {
+  id: number;
+  categories: CategoryReviewHistory[];
+  generalFeedback: string;
+  createdAt: string;
+}
+
+export interface UserReviewsResponse {
+  reviews: ReviewHistoryItem[];
 }

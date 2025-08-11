@@ -1,4 +1,4 @@
-import { AuthLogin, AuthLoginResponse, Category, CategoryInfo, Lecturer, ReviewRequest, Subject } from "../types";
+import { AuthLogin, AuthLoginResponse, Category, CategoryInfo, Lecturer, ReviewCreateResponse, ReviewRequest, Subject, UserReviewsResponse } from "../types";
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
@@ -55,11 +55,14 @@ const apiCall = async <T>(
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     const data = await response.json();
-    
+
     if (!response.ok) {
-      throw new Error(data.message || 'API call failed');
+      const error: any = new Error(data.message || 'API call failed');
+      error.status = response.status;
+      error.data = data.data; // backend wraps details in data
+      throw error;
     }
-    
+
     return data;
   } catch (error) {
     console.error('API Error:', error);
@@ -139,7 +142,7 @@ export const reviewsApi = {
   },
 
   createReview: async (reviewData: ReviewRequest) => {
-    return apiCall<{ review: any }>('/reviews', {
+    return apiCall<ReviewCreateResponse>("/reviews", {
       method: 'POST',
       body: JSON.stringify(reviewData),
     });
@@ -156,7 +159,7 @@ export const reviewsApi = {
   },
 
   getUserReviews: async (userId: string) => {
-    return apiCall<{ reviews: any[] }>(`/reviews/user/${userId}`);
+    return apiCall<UserReviewsResponse>(`/reviews/user/${userId}`);
   },
 };
 

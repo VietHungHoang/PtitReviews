@@ -40,7 +40,6 @@ export const mockReviews = [
     hasUsedService: true,
     additionalAnswers: {},
     createdAt: new Date('2024-01-15'),
-    status: 'approved' as const,
   },
   {
     id: 'rev002',
@@ -55,7 +54,6 @@ export const mockReviews = [
     hasUsedService: true,
     additionalAnswers: {},
     createdAt: new Date('2024-01-16'),
-    status: 'approved' as const,
   },
   {
     id: 'rev003',
@@ -70,8 +68,7 @@ export const mockReviews = [
     hasUsedService: true,
     additionalAnswers: {},
     createdAt: new Date('2024-01-17'),
-    status: 'rejected' as const,
-    rejectionReason: 'Nội dung không đủ chi tiết và thiếu tính xây dựng'
+  rejectionReason: 'Nội dung không đủ chi tiết và thiếu tính xây dựng'
   },
   {
     id: 'rev004',
@@ -86,7 +83,6 @@ export const mockReviews = [
     hasUsedService: true,
     additionalAnswers: {},
     createdAt: new Date('2024-01-18'),
-    status: 'approved' as const,
   },
   {
     id: 'rev005',
@@ -101,7 +97,6 @@ export const mockReviews = [
     hasUsedService: true,
     additionalAnswers: {},
     createdAt: new Date('2024-01-19'),
-    status: 'approved' as const,
   },
   {
     id: 'rev006',
@@ -116,7 +111,6 @@ export const mockReviews = [
     hasUsedService: true,
     additionalAnswers: {},
     createdAt: new Date('2024-01-20'),
-    status: 'approved' as const,
   },
   {
     id: 'rev007',
@@ -131,7 +125,6 @@ export const mockReviews = [
     hasUsedService: true,
     additionalAnswers: {},
     createdAt: new Date('2024-01-21'),
-    status: 'approved' as const,
   },
   {
     id: 'rev008',
@@ -146,7 +139,6 @@ export const mockReviews = [
     hasUsedService: false,
     additionalAnswers: {},
     createdAt: new Date('2024-01-22'),
-    status: 'rejected' as const,
-    rejectionReason: 'Sinh viên chưa trải nghiệm đầy đủ để đưa ra đánh giá chính xác'
+  rejectionReason: 'Sinh viên chưa trải nghiệm đầy đủ để đưa ra đánh giá chính xác'
   }
 ];

@@ -1,11 +1,17 @@
 package com.vhh.ptit_reviews.controller;
 
+import com.vhh.ptit_reviews.domain.model.ReviewErrorType;
 import com.vhh.ptit_reviews.domain.model.User;
 import com.vhh.ptit_reviews.domain.request.ReviewRequest;
 import com.vhh.ptit_reviews.domain.response.ApiResponse;
 import com.vhh.ptit_reviews.domain.response.ReviewResponse;
+import com.vhh.ptit_reviews.domain.response.ReviewHistoryItemResponse;
+import com.vhh.ptit_reviews.domain.response.UserReviewsResponse;
 import com.vhh.ptit_reviews.service.ReviewService;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,13 +28,49 @@ public class ReviewController {
         // Lấy user hiện tại từ SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();
-        
-        ReviewResponse reviewResponse = reviewService.createReview(reviewRequest, user.getId());
-        ApiResponse<ReviewResponse> response = ApiResponse.<ReviewResponse>builder()
-                .status(201)
-                .data(null)
-                .message("Review created successfully")
+
+    // Gọi AI check review
+    List<ReviewErrorType> errors = reviewService.checkReviews(reviewRequest);
+
+    // Nếu có lỗi -> trả về 200 cùng danh sách lỗi trong data
+    if (!errors.isEmpty() && !errors.contains(ReviewErrorType.NONE)) {
+        ReviewResponse reviewResponse = ReviewResponse.builder()
+            .id(null)
+            .commonReview(reviewRequest.getCommonReview())
+            .createdAt(null)
+            .updatedAt(null)
+            .errors(errors)
+            .build();
+
+        ApiResponse<ReviewResponse> errorResponse = ApiResponse.<ReviewResponse>builder()
+            .status(200)
+            .data(reviewResponse)
+            .message("Review không hợp lệ")
+            .build();
+        return ResponseEntity.ok(errorResponse);
+    }
+
+    // Nếu không lỗi -> tạo review và trả về 200
+    ReviewResponse reviewResponse = reviewService.createReview(reviewRequest, user.getId());
+
+    ApiResponse<ReviewResponse> response = ApiResponse.<ReviewResponse>builder()
+        .status(200)
+        .data(reviewResponse)
+        .message("Review created successfully")
+        .build();
+
+    return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ApiResponse<UserReviewsResponse>> getUserReviews(@PathVariable Long userId) {
+        List<ReviewHistoryItemResponse> items = reviewService.getUserReviews(userId);
+        UserReviewsResponse payload = UserReviewsResponse.builder().reviews(items).build();
+        ApiResponse<UserReviewsResponse> response = ApiResponse.<UserReviewsResponse>builder()
+                .status(200)
+                .data(payload)
+                .message("OK")
                 .build();
-        return ResponseEntity.status(201).body(response);
+        return ResponseEntity.ok(response);
     }
 }

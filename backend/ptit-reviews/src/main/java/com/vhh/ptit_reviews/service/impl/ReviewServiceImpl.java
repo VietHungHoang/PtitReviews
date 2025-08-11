@@ -6,6 +6,9 @@ import com.vhh.ptit_reviews.domain.request.QuestionRequest;
 import com.vhh.ptit_reviews.domain.request.ReviewRequest;
 import com.vhh.ptit_reviews.domain.response.ReviewResponse;
 import com.vhh.ptit_reviews.repository.*;
+import com.vhh.ptit_reviews.domain.response.ReviewHistoryItemResponse;
+import com.vhh.ptit_reviews.domain.response.CategoryReviewHistoryResponse;
+import com.vhh.ptit_reviews.service.AIService;
 import com.vhh.ptit_reviews.service.ReviewService;
 import com.vhh.ptit_reviews.service.mapper.ReviewMapper;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final LecturerRepository lecturerRepository;
     private final SubjectRepository subjectRepository;
     private final ReviewMapper reviewMapper;
+    private final AIService aiService;
 
     @Override
     @Transactional
@@ -38,7 +42,6 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = Review.builder()
                 .user(user)
                 .commonReview(reviewRequest.getCommonReview())
-                .status(ReviewStatus.PENDING)
                 .build();
 
         // Lưu review trước để có ID
@@ -112,5 +115,67 @@ public class ReviewServiceImpl implements ReviewService {
         review = reviewRepository.save(review);
 
         return reviewMapper.reviewToReviewResponse(review);
+    }
+
+    public List<String> extractReviews(ReviewRequest reviewRequest) {
+        List<String> reviews = new ArrayList<>();
+
+        // 1. Lấy commonReview nếu có
+        if (reviewRequest.getCommonReview() != null && !reviewRequest.getCommonReview().isBlank()) {
+            reviews.add(reviewRequest.getCommonReview().trim());
+        }
+
+        // 2. Lấy review từ từng CategoryRequest
+        if (reviewRequest.getCategories() != null) {
+            for (CategoryRequest category : reviewRequest.getCategories()) {
+                if (category.getReview() != null && !category.getReview().isBlank()) {
+                    reviews.add(category.getReview().trim());
+                }
+            }
+        }
+
+        return reviews;
+    }
+
+    /**
+     * Gọi AI service để check review bất thường
+     */
+    public List<ReviewErrorType> checkReviews(ReviewRequest reviewRequest) {
+        List<String> reviews = extractReviews(reviewRequest);
+        return aiService.checkReviews(reviews);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReviewHistoryItemResponse> getUserReviews(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        List<Review> reviews = reviewRepository.findAll().stream()
+                .filter(r -> r.getUser().getId().equals(user.getId()))
+                .toList();
+
+        List<ReviewHistoryItemResponse> responses = new ArrayList<>();
+        for (Review review : reviews) {
+            List<CategoryReviewHistoryResponse> categories = review.getReviewCategories() != null
+                    ? review.getReviewCategories().stream()
+                        .map(rc -> new CategoryReviewHistoryResponse(
+                                rc.getCategory().getName(),
+                                rc.getRate(),
+                                rc.getReviewText()
+                        ))
+                        .toList()
+                    : List.of();
+
+            ReviewHistoryItemResponse item = ReviewHistoryItemResponse.builder()
+                    .id(review.getId())
+                    .categories(categories)
+                    .generalFeedback(review.getCommonReview())
+                    .createdAt(review.getCreatedAt())
+                    .build();
+
+            responses.add(item);
+        }
+
+        return responses;
     }
 }

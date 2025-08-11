@@ -1,22 +1,20 @@
 package com.vhh.ptit_reviews.domain.response;
 
-import com.vhh.ptit_reviews.domain.model.ReviewErrorType;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
 @Builder
-public class ReviewResponse {
+public class ReviewHistoryItemResponse {
     private Long id;
-    private String commonReview;
+    private List<CategoryReviewHistoryResponse> categories;
+    private String generalFeedback; // commonReview
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private List<ReviewErrorType> errors;
 }

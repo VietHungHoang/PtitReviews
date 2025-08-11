@@ -1,6 +1,5 @@
 import React from 'react';
-import { Calendar, Star, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { Review } from '../../types';
+import { Calendar, Star } from 'lucide-react';
 import { reviewsApi } from '../../services/api';
 import { useApi } from '../../hooks/useApi';
 
@@ -15,39 +14,6 @@ export default function ReviewHistory({ userId }: ReviewHistoryProps) {
   );
   
   const reviews = reviewsData?.reviews || [];
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'rejected':
-        return <XCircle className="w-5 h-5 text-red-500" />;
-      default:
-        return <Clock className="w-5 h-5 text-yellow-500" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'Đã duyệt';
-      case 'rejected':
-        return 'Bị từ chối';
-      default:
-        return 'Đang chờ';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-yellow-100 text-yellow-800';
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8">
@@ -85,11 +51,8 @@ export default function ReviewHistory({ userId }: ReviewHistoryProps) {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        Đánh giá: {review.categories.join(', ')}
+                        Đánh giá: {review.categories.map(cat => cat.name).join(', ')}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(review.status)}`}>
-                        {getStatusText(review.status)}
-                      </span>
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
@@ -98,32 +61,28 @@ export default function ReviewHistory({ userId }: ReviewHistoryProps) {
                       </div>
                       <div className="flex items-center space-x-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span>{review.rating}/5</span>
+                        <span>{review.categories.length > 0 ? Math.round(review.categories.reduce((sum, cat) => sum + cat.rate, 0) / review.categories.length) : 0}/5</span>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {getStatusIcon(review.status)}
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">Nhận xét:</h4>
-                    <p className="text-gray-700 bg-gray-50 rounded-lg p-3">{review.freeComment}</p>
-                  </div>
+                  {review.categories.map((category, idx) => (
+                    <div key={idx}>
+                      <h4 className="font-medium text-gray-900 mb-1">
+                        {category.name} ({category.rate}/5 sao):
+                      </h4>
+                      <p className="text-gray-700 bg-gray-50 rounded-lg p-3">
+                        {category.comment || 'Không có nhận xét cho danh mục này'}
+                      </p>
+                    </div>
+                  ))}
                   
                   {review.generalFeedback && (
                     <div>
                       <h4 className="font-medium text-gray-900 mb-1">Cảm nhận chung:</h4>
                       <p className="text-gray-700 bg-gray-50 rounded-lg p-3">{review.generalFeedback}</p>
-                    </div>
-                  )}
-
-                  {review.status === 'rejected' && review.rejectionReason && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <h4 className="font-medium text-red-800 mb-1">Lý do từ chối:</h4>
-                      <p className="text-red-700 text-sm">{review.rejectionReason}</p>
                     </div>
                   )}
                 </div>

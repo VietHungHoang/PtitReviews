@@ -17,3 +17,6 @@ spring:
                 dialect: org.hibernate.dialect.MySQL8Dialect
                 format_sql: true
         show-sql: true
+
+gemini:
+  api-key: AIzaSyDTf-cBEQUE57RHaQ0mjlAUtJarOv1UFOQ
