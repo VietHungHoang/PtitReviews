@@ -22,7 +22,7 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
           <div className="flex items-center space-x-8">
             <div 
               className="flex items-center space-x-3 cursor-pointer"
-              onClick={() => navigate(user.role === 'admin' ? '/admin/dashboard' : '/')}
+              onClick={() => navigate(user.role.toLowerCase() === 'admin' ? '/admin/dashboard' : '/')}
             >
               <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">P</span>
@@ -35,7 +35,7 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
             
             {user && (
               <nav className="hidden md:flex space-x-6">
-                {user.role === 'student' ? (
+                {user.role.toLowerCase() === 'student' ? (
                   <>
                     <button
                       onClick={() => navigate('/')}
@@ -110,7 +110,7 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500">
-                    {user.role === 'admin' ? 'Quản trị viên' : user.studentId}
+                    {user.role.toLowerCase() === 'admin' ? 'Quản trị viên' : user.code}
                   </p>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { Category, CategoryInfo, Lecturer, Subject } from "../types";
+import { AuthLogin, AuthLoginResponse, Category, CategoryInfo, Lecturer, ReviewRequest, Subject } from "../types";
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
@@ -21,6 +21,20 @@ const setAuthToken = (token: string): void => {
 const removeAuthToken = (): void => {
   localStorage.removeItem('authToken');
 };
+
+// Refresh token management
+const getRefreshToken = (): string | null => {
+  return localStorage.getItem('refreshToken');
+};
+
+const setRefreshToken = (token: string): void => {
+  localStorage.setItem('refreshToken', token);
+};
+
+const removeRefreshToken = (): void => {
+  localStorage.removeItem('refreshToken');
+};
+
 
 // Generic API call function  
 const apiCall = async <T>(
@@ -53,19 +67,19 @@ const apiCall = async <T>(
   }
 };
 
+
+
 // Authentication API
 export const authApi = {
-  login: async (email: string, password: string) => {
-    const response = await apiCall<{
-      user: any;
-      token: string;
-    }>('/auth/login', {
+  login: async (authLogin: AuthLogin) => {
+    const response = await apiCall<AuthLoginResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(authLogin),
     });
     
     if (response.status === 200) {
-      setAuthToken(response.data.token);
+      setAuthToken(response.data.accessToken);
+      setRefreshToken(response.data.refreshToken);
     }
     
     return response;
@@ -75,7 +89,7 @@ export const authApi = {
     name: string;
     email: string;
     password: string;
-    studentId: string;
+    code: string;
   }) => {
     return apiCall<{ user: any }>('/auth/register', {
       method: 'POST',
@@ -89,6 +103,7 @@ export const authApi = {
     });
     
     removeAuthToken();
+    removeRefreshToken();
     return response;
   },
 };
@@ -123,7 +138,7 @@ export const reviewsApi = {
     }>(endpoint);
   },
 
-  createReview: async (reviewData: any) => {
+  createReview: async (reviewData: ReviewRequest) => {
     return apiCall<{ review: any }>('/reviews', {
       method: 'POST',
       body: JSON.stringify(reviewData),

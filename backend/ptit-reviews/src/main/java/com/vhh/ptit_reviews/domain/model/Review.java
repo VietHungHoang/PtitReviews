@@ -1,34 +1,40 @@
-// package com.vhh.ptit_reviews.domain.model;
+package com.vhh.ptit_reviews.domain.model;
 
-// import jakarta.persistence.*;
-// import lombok.*;
+import jakarta.persistence.*;
+import lombok.*;
 
-// import java.time.LocalDateTime;
-// import java.util.List;
+import java.time.LocalDateTime;
+import java.util.List;
 
-// @Entity
-// @Table(name = "reviews")
-// @Data
-// @NoArgsConstructor
-// @AllArgsConstructor
-// @Builder
-// public class Review {
-//     @Id
-//     @GeneratedValue(strategy = GenerationType.IDENTITY)
-//     private Long id;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
-//     @ManyToOne(fetch = FetchType.LAZY)
-//     @JoinColumn(name = "user_id")
-//     private User user;
+@Entity
+@Table(name = "reviews")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Review {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-//     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
-//     private List<ReviewCategory> reviewCategories;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-//     private int rate;
-//     private String freeComment;
-//     private LocalDateTime createdAt;
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReviewCategory> reviewCategories;
 
-//     @Enumerated(EnumType.STRING)
-//     private ReviewStatus status; 
+    private String commonReview;
+    
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+    
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
-// }
+    @Enumerated(EnumType.STRING)
+    private ReviewStatus status; 
+}

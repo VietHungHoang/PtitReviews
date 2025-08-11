@@ -47,7 +47,7 @@ function App() {
   const handleLogin = (userData: User) => {
     setUser(userData);
     // Redirect based on role
-    if (userData.role === 'admin') {
+    if (userData.role.toLowerCase() === 'admin') {
       navigate('/admin/dashboard');
     } else {
       navigate('/');

@@ -12,7 +12,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [studentId, setStudentId] = useState('');
+  const [code, setStudentId] = useState('');
   const { mutate: loginMutation, isSubmitting, error } = useApiMutation();
   const { mutate: registerMutation } = useApiMutation();
 
@@ -28,7 +28,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           name,
           email,
           password,
-          studentId,
+          code,
         });
         onLogin(response.data.user);
       }
@@ -87,7 +87,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   </label>
                   <input
                     type="text"
-                    value={studentId}
+                    value={code}
                     onChange={(e) => setStudentId(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     placeholder="Ví dụ: B20DCCN001"

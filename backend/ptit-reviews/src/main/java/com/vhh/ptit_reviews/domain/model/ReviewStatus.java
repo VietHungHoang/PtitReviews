@@ -1,6 +1,7 @@
-// package com.vhh.ptit_reviews.domain.model;
+package com.vhh.ptit_reviews.domain.model;
 
-// public enum ReviewStatus {
-//    APPROVED,
-//    REJECTED 
-// }
+public enum ReviewStatus {
+   PENDING,
+   APPROVED,
+   REJECTED 
+}

@@ -7,6 +7,17 @@ export interface User {
   role: 'admin' | 'student';
 }
 
+export interface AuthLogin {
+  email: string;
+  password: string;
+}
+
+export interface AuthLoginResponse {
+    accessToken: string;
+    refreshToken: string;
+    user: User;
+}
+
 export interface Review {
   id: string;
   userId: string;
@@ -91,4 +102,22 @@ export interface NotificationProps {
   title: string;
   message: string;
   onClose: () => void;
+}
+
+export interface ReviewRequest {
+  commonReview: string;
+  categories: CategoryRequest[];
+}
+
+export interface CategoryRequest {
+  id: number;
+  questions: QuestionRequest[];
+  rate: number;
+  review: string;
+  selectedItems: number[];
+}
+
+export interface QuestionRequest {
+  id: number;
+  answerId: number;
 }

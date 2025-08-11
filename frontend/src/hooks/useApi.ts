@@ -21,7 +21,7 @@ export function useApi<T>(
     
     try {
       const response = await apiCall();
-      if (response.status === 200) {
+      if (response.status === 200 || response.status === 201) {
         setState({
           data: response.data,
           loading: false,
@@ -59,14 +59,14 @@ export function useApiMutation<T, P = any>() {
   });
 
   const mutate = async (
-    apiCall: (params: P) => Promise<{ status: string; data: T; message: string }>,
+    apiCall: (params: P) => Promise<{ status: number; data: T; message: string }>,
     params: P
   ) => {
     setState(prev => ({ ...prev, isSubmitting: true, loading: true, error: null }));
     
     try {
       const response = await apiCall(params);
-      if (response.status === 'success') {
+      if (response.status === 200 || response.status === 201) {
         setState({
           data: response.data,
           loading: false,

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Send, CheckCircle, AlertCircle } from 'lucide-react';
-import { Answer, Category } from '../../types';
+import { Answer, Category, CategoryRequest, QuestionRequest, ReviewRequest } from '../../types';
 import ItemSelection from './ItemSelection';
 import { categoriesApi, reviewsApi } from '../../services/api';
 import { useApi, useApiMutation } from '../../hooks/useApi';
@@ -67,7 +67,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
     // Validation
     const missingRatings = selectedCategories.filter(cat => !ratings[cat.id]);
     const missingComments = selectedCategories.filter(cat => !comments[cat.id] || comments[cat.id].trim().length < 10);
-    const missingServiceUsage = selectedCategories.filter(cat => hasUsedService[cat.id] === undefined);
+    const missingServiceUsage = categoryInfos.filter(cat => cat.questions.filter(q => selectedAnswers[q.id] === undefined).length > 0);
     
     if (missingRatings.length > 0 || missingComments.length > 0 || missingServiceUsage.length > 0) {
       setNotificationType('error');
@@ -84,17 +84,31 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
     }
 
     try {
-      const reviewData = {
-        categories: selectedCategories.map(cat => cat.id),
-        selectedItems: Object.values(selectedItems).flat(),
-        rating: Math.round(Object.values(ratings).reduce((sum, rating) => sum + rating, 0) / Object.values(ratings).length),
-        freeComment: Object.values(comments).join('\n\n'),
-        generalFeedback,
-        hasUsedService: Object.values(hasUsedService).some(used => used),
-        additionalAnswers: {}
-      };
+    const categoryRequests: CategoryRequest[] = [];
+     for(const cat of categoryInfos) {
+        const questionRequests: QuestionRequest[] = [];
+        for(const que of cat.questions) {
+            const quest: QuestionRequest = {
+                id: que.id,
+                answerId: selectedAnswers[que.id].id
+            };
+           questionRequests.push(quest); 
+        }
+        const categoryRequest: CategoryRequest = {
+            id: cat.categoryId,
+            questions: questionRequests,
+            rate: Math.round(Object.values(ratings).reduce((sum, rating) => sum + rating, 0) / Object.values(ratings).length),
+            review: comments[cat.categoryId],
+            selectedItems: selectedItems[cat.categoryId]
+        }
+        categoryRequests.push(categoryRequest);
+     }
+    const reviewData: ReviewRequest = {
+        commonReview: generalFeedback,
+        categories: categoryRequests
+    }
 
-      // await createReview(reviewsApi.createReview, reviewData);
+      await createReview(reviewsApi.createReview, reviewData);
       
       setNotificationType('success');
       setShowNotification(true);
