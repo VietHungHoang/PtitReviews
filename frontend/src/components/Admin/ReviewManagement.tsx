@@ -1,38 +1,34 @@
 import React, { useState } from 'react';
-import { Search, Filter, Eye, Trash2, Calendar, Star, User } from 'lucide-react';
+import { Search, Eye, Trash2, Calendar, Star, User } from 'lucide-react';
 import { Review } from '../../types';
-import { reviewsApi, subjectsApi, lecturersApi } from '../../services/api';
+import { reviewsApi } from '../../services/api';
 import { useApi, useApiMutation } from '../../hooks/useApi';
 
 interface ReviewManagementProps {
-  onDeleteReview: (reviewId: string) => void;
+  onDeleteReview: (reviewId: number) => void;
 }
 
 export default function ReviewManagement({ onDeleteReview }: ReviewManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   
   const { data: reviewsData, loading, error, refetch } = useApi(
     () => reviewsApi.getReviews({
       search: searchTerm || undefined,
-      status: statusFilter !== 'all' ? statusFilter : undefined,
+      page: 0,
+      limit: 50
     }),
-    [searchTerm, statusFilter]
+    [searchTerm]
   );
   
-  const { data: subjectsData } = useApi(() => subjectsApi.getSubjects(), []);
-  const { data: lecturersData } = useApi(() => lecturersApi.getLecturers(), []);
   const { mutate: deleteReview } = useApiMutation();
   
   const reviews = reviewsData?.reviews || [];
-  const subjects = subjectsData?.subjects || [];
-  const lecturers = lecturersData?.lecturers || [];
 
-  const handleDelete = async (reviewId: string) => {
+  const handleDelete = async (reviewId: number) => {
     if (confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) {
       try {
-        await deleteReview(reviewsApi.deleteReview, reviewId);
+        await deleteReview(reviewsApi.deleteReview, reviewId.toString());
         onDeleteReview(reviewId);
         setSelectedReview(null);
         refetch(); // Refresh the list
@@ -42,42 +38,12 @@ export default function ReviewManagement({ onDeleteReview }: ReviewManagementPro
     }
   };
 
-  const getItemNames = (itemIds: string[]) => {
-    const allItems = [...subjects, ...lecturers];
-    return itemIds.map(id => {
-      const item = allItems.find(item => item.id === id);
-      return item ? item.name : id;
-    }).join(', ');
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-yellow-100 text-yellow-800';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'Đã duyệt';
-      case 'rejected':
-        return 'Bị từ chối';
-      default:
-        return 'Đang chờ';
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý đánh giá</h1>
-          <p className="text-gray-600">Xem xét và phê duyệt các đánh giá từ sinh viên</p>
+          <p className="text-gray-600">Xem xét và quản lý các đánh giá từ sinh viên</p>
         </div>
 
         {/* Filters */}
@@ -88,24 +54,12 @@ export default function ReviewManagement({ onDeleteReview }: ReviewManagementPro
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm theo nội dung, tên sinh viên, chủ đề..."
+                  placeholder="Tìm kiếm theo nội dung, tên sinh viên, danh mục..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 />
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="w-5 h-5 text-gray-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="approved">Đã duyệt</option>
-                <option value="rejected">Bị từ chối</option>
-              </select>
             </div>
           </div>
         </div>
@@ -132,12 +86,10 @@ export default function ReviewManagement({ onDeleteReview }: ReviewManagementPro
                     <div className="flex items-center space-x-2">
                       <User className="w-4 h-4 text-gray-500" />
                       <span className="font-semibold text-gray-900">{review.userName}</span>
-                      {review.studentId && (
-                        <span className="text-sm text-gray-500">({review.studentId})</span>
-                      )}
+                      <span className="text-sm text-gray-500">({review.userCode})</span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(review.status)}`}>
-                      {getStatusText(review.status)}
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Đã duyệt
                     </span>
                   </div>
                   
@@ -148,21 +100,14 @@ export default function ReviewManagement({ onDeleteReview }: ReviewManagementPro
                     </div>
                     <div className="flex items-center space-x-1">
                       <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span>{review.rating}/5</span>
+                      <span>{review.averageRating.toFixed(1)}/5</span>
                     </div>
                   </div>
 
                   <div className="mb-3">
-                    <span className="text-sm font-medium text-gray-700">Chủ đề: </span>
+                    <span className="text-sm font-medium text-gray-700">Danh mục: </span>
                     <span className="text-sm text-purple-600">{review.categories.join(', ')}</span>
                   </div>
-                  
-                  {review.selectedItems && review.selectedItems.length > 0 && (
-                    <div className="mb-3">
-                      <span className="text-sm font-medium text-gray-700">Đánh giá về: </span>
-                      <span className="text-sm text-blue-600">{getItemNames(review.selectedItems)}</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -186,27 +131,21 @@ export default function ReviewManagement({ onDeleteReview }: ReviewManagementPro
 
               <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-1">Nhận xét:</h4>
-                  <p className="text-gray-700 bg-gray-50 rounded-lg p-3 line-clamp-3">{review.freeComment}</p>
+                  <h4 className="font-medium text-gray-900 mb-1">Nhận xét chung:</h4>
+                  <p className="text-gray-700 bg-gray-50 rounded-lg p-3 line-clamp-3">
+                    {review.commonReview || 'Không có nhận xét chung'}
+                  </p>
                 </div>
-                
-                {review.generalFeedback && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-1">Cảm nhận chung:</h4>
-                    <p className="text-gray-700 bg-gray-50 rounded-lg p-3 line-clamp-2">{review.generalFeedback}</p>
-                  </div>
-                )}
-
-                {review.status === 'rejected' && review.rejectionReason && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <h4 className="font-medium text-red-800 mb-1">Lý do từ chối:</h4>
-                    <p className="text-red-700 text-sm">{review.rejectionReason}</p>
-                  </div>
-                )}
               </div>
             </div>
           ))}
         </div>
+
+        {reviews.length === 0 && !loading && (
+          <div className="text-center py-12 text-gray-500">
+            <p>Không có đánh giá nào</p>
+          </div>
+        )}
 
         {/* Review Detail Modal */}
         {selectedReview && (
@@ -227,49 +166,28 @@ export default function ReviewManagement({ onDeleteReview }: ReviewManagementPro
                   <div className="flex items-center space-x-2">
                     <User className="w-5 h-5 text-gray-500" />
                     <span className="font-semibold">{selectedReview.userName}</span>
-                    {selectedReview.studentId && (
-                      <span className="text-gray-500">({selectedReview.studentId})</span>
-                    )}
+                    <span className="text-gray-500">({selectedReview.userCode})</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                    <span>{selectedReview.rating}/5</span>
+                    <span>{selectedReview.averageRating.toFixed(1)}/5</span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedReview.status)}`}>
-                    {getStatusText(selectedReview.status)}
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Đã duyệt
                   </span>
                 </div>
 
                 <div>
-                  <span className="font-medium text-gray-700">Chủ đề: </span>
+                  <span className="font-medium text-gray-700">Danh mục: </span>
                   <span className="text-purple-600">{selectedReview.categories.join(', ')}</span>
                 </div>
-                
-                {selectedReview.selectedItems && selectedReview.selectedItems.length > 0 && (
-                  <div>
-                    <span className="font-medium text-gray-700">Đánh giá về: </span>
-                    <span className="text-blue-600">{getItemNames(selectedReview.selectedItems)}</span>
-                  </div>
-                )}
 
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Nhận xét:</h4>
-                  <p className="text-gray-700 bg-gray-50 rounded-lg p-4">{selectedReview.freeComment}</p>
+                  <h4 className="font-medium text-gray-900 mb-2">Nhận xét chung:</h4>
+                  <p className="text-gray-700 bg-gray-50 rounded-lg p-4">
+                    {selectedReview.commonReview || 'Không có nhận xét chung'}
+                  </p>
                 </div>
-
-                {selectedReview.generalFeedback && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Cảm nhận chung:</h4>
-                    <p className="text-gray-700 bg-gray-50 rounded-lg p-4">{selectedReview.generalFeedback}</p>
-                  </div>
-                )}
-                
-                {selectedReview.status === 'rejected' && selectedReview.rejectionReason && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h4 className="font-medium text-red-800 mb-2">Lý do từ chối:</h4>
-                    <p className="text-red-700">{selectedReview.rejectionReason}</p>
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end">

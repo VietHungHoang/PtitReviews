@@ -13,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/subjects")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class SubjectController {
     private final SubjectService subjectService;
 

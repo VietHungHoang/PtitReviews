@@ -3,6 +3,7 @@ package com.vhh.ptit_reviews.controller;
 import com.vhh.ptit_reviews.domain.model.ReviewErrorType;
 import com.vhh.ptit_reviews.domain.model.User;
 import com.vhh.ptit_reviews.domain.request.ReviewRequest;
+import com.vhh.ptit_reviews.domain.response.AdminReviewsResponse;
 import com.vhh.ptit_reviews.domain.response.ApiResponse;
 import com.vhh.ptit_reviews.domain.response.ReviewResponse;
 import com.vhh.ptit_reviews.domain.response.ReviewHistoryItemResponse;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/reviews")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class ReviewController {
     private final ReviewService reviewService;
 
@@ -72,5 +74,20 @@ public class ReviewController {
                 .message("OK")
                 .build();
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<AdminReviewsResponse>> getAllReviews(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search) {
+        AdminReviewsResponse reviews = reviewService.getAllReviews(page, limit, search);
+        return ResponseEntity.ok(ApiResponse.success(reviews, "Reviews retrieved successfully"));
+    }
+
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<ApiResponse<Void>> deleteReview(@PathVariable Long reviewId) {
+        reviewService.deleteReview(reviewId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Review deleted successfully"));
     }
 }

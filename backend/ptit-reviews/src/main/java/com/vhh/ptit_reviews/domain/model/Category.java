@@ -34,7 +34,6 @@ public class Category {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions;
 
-
-    // @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-    // private List<ReviewCategory> reviewCategories;
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReviewCategory> reviewCategories;
 }

@@ -10,7 +10,6 @@ import Dashboard from './components/Analytics/Dashboard';
 import ReviewHistory from './components/Student/ReviewHistory';
 import ReviewManagement from './components/Admin/ReviewManagement';
 import Notification from './components/Common/Notification';
-import ApiDocumentation from './components/Admin/ApiDocumentation';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -98,7 +97,7 @@ function App() {
       return <Navigate to="/login" replace />;
     }
     
-    if (adminOnly && user.role !== 'admin') {
+    if (adminOnly && user.role.toLowerCase() !== 'admin') {
       return <Navigate to="/" replace />;
     }
     
@@ -108,7 +107,7 @@ function App() {
   // Public Route Component (redirect if logged in)
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
     if (user) {
-      return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/'} replace />;
+      return <Navigate to={user.role.toLowerCase() === 'admin' ? '/admin/dashboard' : '/'} replace />;
     }
     return <>{children}</>;
   };
@@ -139,7 +138,7 @@ function App() {
           path="/" 
           element={
             <ProtectedRoute>
-              {user?.role === 'admin' ? (
+              {user?.role.toLowerCase() === 'admin' ? (
                 <Navigate to="/admin/dashboard" replace />
               ) : (
                 <CategorySelection />
@@ -187,20 +186,11 @@ function App() {
           } 
         />
         
-        <Route 
-          path="/admin/api-docs" 
-          element={
-            <ProtectedRoute adminOnly>
-              <ApiDocumentation />
-            </ProtectedRoute>
-          } 
-        />
-
         {/* Catch all route */}
         <Route 
           path="*" 
           element={
-            <Navigate to={user ? (user.role === 'admin' ? '/admin/dashboard' : '/') : '/login'} replace />
+            <Navigate to={user ? (user.role.toLowerCase() === 'admin' ? '/admin/dashboard' : '/') : '/login'} replace />
           } 
         />
       </Routes>

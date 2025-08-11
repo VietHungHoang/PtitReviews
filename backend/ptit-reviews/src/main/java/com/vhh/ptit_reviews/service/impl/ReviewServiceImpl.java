@@ -4,6 +4,9 @@ import com.vhh.ptit_reviews.domain.model.*;
 import com.vhh.ptit_reviews.domain.request.CategoryRequest;
 import com.vhh.ptit_reviews.domain.request.QuestionRequest;
 import com.vhh.ptit_reviews.domain.request.ReviewRequest;
+import com.vhh.ptit_reviews.domain.response.AdminReviewResponse;
+import com.vhh.ptit_reviews.domain.response.AdminReviewsResponse;
+import com.vhh.ptit_reviews.domain.response.PaginationResponse;
 import com.vhh.ptit_reviews.domain.response.ReviewResponse;
 import com.vhh.ptit_reviews.repository.*;
 import com.vhh.ptit_reviews.domain.response.ReviewHistoryItemResponse;
@@ -177,5 +180,73 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         return responses;
+    }
+
+    @Override
+    public AdminReviewsResponse getAllReviews(int page, int limit, String search) {
+        List<Review> allReviews = reviewRepository.findAll();
+        
+        // Filter by search if provided
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase();
+            allReviews = allReviews.stream()
+                    .filter(review -> 
+                        review.getUser().getName().toLowerCase().contains(searchLower) ||
+                        review.getUser().getCode().toLowerCase().contains(searchLower) ||
+                        (review.getCommonReview() != null && review.getCommonReview().toLowerCase().contains(searchLower)) ||
+                        review.getReviewCategories().stream().anyMatch(rc -> 
+                            rc.getCategory().getName().toLowerCase().contains(searchLower) ||
+                            (rc.getReviewText() != null && rc.getReviewText().toLowerCase().contains(searchLower))
+                        )
+                    )
+                    .toList();
+        }
+        
+        // Calculate pagination
+        long total = allReviews.size();
+        int totalPages = (int) Math.ceil((double) total / limit);
+        int startIndex = page * limit;
+        int endIndex = Math.min(startIndex + limit, allReviews.size());
+        
+        List<Review> paginatedReviews = allReviews.subList(startIndex, endIndex);
+        
+        // Map to DTOs
+        List<AdminReviewResponse> reviewResponses = paginatedReviews.stream()
+                .map(review -> {
+                    List<String> categories = review.getReviewCategories() != null
+                            ? review.getReviewCategories().stream()
+                                .map(rc -> rc.getCategory().getName())
+                                .toList()
+                            : List.of();
+                    
+                    Double averageRating = review.getReviewCategories() != null && !review.getReviewCategories().isEmpty()
+                            ? review.getReviewCategories().stream()
+                                .mapToInt(ReviewCategory::getRate)
+                                .average()
+                                .orElse(0.0)
+                            : 0.0;
+                    
+                    return new AdminReviewResponse(
+                            review.getId(),
+                            review.getUser().getName(),
+                            review.getUser().getCode(),
+                            categories,
+                            averageRating,
+                            review.getCommonReview(),
+                            review.getCreatedAt()
+                    );
+                })
+                .toList();
+        
+        PaginationResponse pagination = new PaginationResponse(page, limit, total, totalPages);
+        return new AdminReviewsResponse(reviewResponses, pagination);
+    }
+
+    @Override
+    @Transactional
+    public void deleteReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found with id: " + reviewId));
+        reviewRepository.delete(review);
     }
 }

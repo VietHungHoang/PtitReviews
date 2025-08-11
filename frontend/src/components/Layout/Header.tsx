@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, LogOut, BarChart3, Home, History, FileText, Server } from 'lucide-react';
+import { User, LogOut, BarChart3, Home, History, FileText } from 'lucide-react';
 
 interface HeaderProps {
   user: any;
@@ -83,17 +83,6 @@ export default function Header({ user, currentPath, onLogout }: HeaderProps) {
                     >
                       <FileText className="w-4 h-4" />
                       <span>Quản lý đánh giá</span>
-                    </button>
-                    <button
-                      onClick={() => navigate('/admin/api-docs')}
-                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-2 ${
-                        isActive('/admin/api-docs')
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      <Server className="w-4 h-4" />
-                      <span>API Docs</span>
                     </button>
                   </>
                 )}

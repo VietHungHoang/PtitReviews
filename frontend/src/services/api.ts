@@ -116,8 +116,6 @@ export const reviewsApi = {
   getReviews: async (params?: {
     page?: number;
     limit?: number;
-    status?: string;
-    category?: string;
     search?: string;
   }) => {
     const queryParams = new URLSearchParams();
@@ -131,7 +129,15 @@ export const reviewsApi = {
     
     const endpoint = `/reviews${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiCall<{
-      reviews: any[];
+      reviews: Array<{
+        id: number;
+        userName: string;
+        userCode: string;
+        categories: string[];
+        averageRating: number;
+        commonReview: string;
+        createdAt: string;
+      }>;
       pagination: {
         page: number;
         limit: number;
@@ -192,6 +198,15 @@ export const analyticsApi = {
       trendData: Array<{
         date: string;
         count: number;
+        averageRating: number;
+      }>;
+      recentReviews: Array<{
+        id: number;
+        userName: string;
+        categoryName: string;
+        rating: number;
+        preview: string;
+        createdAt: string;
       }>;
     }>('/analytics/dashboard');
   },

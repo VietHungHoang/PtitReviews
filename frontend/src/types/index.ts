@@ -19,18 +19,13 @@ export interface AuthLoginResponse {
 }
 
 export interface Review {
-  id: string;
-  userId: string;
+  id: number;
   userName: string;
-  studentId?: string;
-  categories: ReviewCategory[];
-  selectedItems: string[]; // IDs of selected subjects/lecturers
-  rating: number;
-  freeComment: string;
-  generalFeedback: string;
-  hasUsedService: boolean;
-  additionalAnswers: Record<string, string>;
-  createdAt: Date;
+  userCode: string;
+  categories: string[];
+  averageRating: number;
+  commonReview: string;
+  createdAt: string;
 }
 
 export type ReviewCategory = 
@@ -85,13 +80,23 @@ export interface CategoryInfo {
 
 export interface Analytics {
   totalReviews: number;
-  reviewsByCategory: Record<ReviewCategory, number>;
-  averageRating: number;
   approvedReviews: number;
   rejectedReviews: number;
+  pendingReviews: number;
+  averageRating: number;
+  reviewsByCategory: Record<string, number>;
   trendData: Array<{
     date: string;
     count: number;
+    averageRating: number;
+  }>;
+  recentReviews: Array<{
+    id: number;
+    userName: string;
+    categoryName: string;
+    rating: number;
+    preview: string;
+    createdAt: string;
   }>;
 }
 
