@@ -43,4 +43,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
            "JOIN rc.category c " +
            "ORDER BY r.createdAt DESC")
     List<Object[]> findRecentReviews(Pageable pageable);
+    
+    @Query("SELECT rc.rate, COUNT(rc) " +
+           "FROM ReviewCategory rc " +
+           "GROUP BY rc.rate " +
+           "ORDER BY rc.rate")
+    List<Object[]> findRatingDistribution();
 }

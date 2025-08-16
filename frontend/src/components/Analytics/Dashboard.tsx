@@ -183,10 +183,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Charts Placeholder */}
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Xu hướng đánh giá theo thời gian</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Xu hướng đánh giá trong tuần</h2>
             <div className="h-64 relative">
               <svg className="w-full h-full" viewBox="0 0 400 200">
                 <defs>
@@ -201,35 +201,67 @@ export default function Dashboard() {
                   <line key={i} x1="40" y1={40 + i * 30} x2="360" y2={40 + i * 30} stroke="#E5E7EB" strokeWidth="1"/>
                 ))}
                 
-                {/* Data line */}
-                <polyline
-                  fill="none"
-                  stroke="#8B5CF6"
-                  strokeWidth="3"
-                  points="40,160 80,140 120,120 160,100 200,90 240,85 280,80 320,75 360,70"
-                />
-                
-                {/* Fill area */}
-                <polygon
-                  fill="url(#gradient)"
-                  points="40,160 80,140 120,120 160,100 200,90 240,85 280,80 320,75 360,70 360,160 40,160"
-                />
-                
-                {/* Data points */}
-                {[
-                  {x: 40, y: 160}, {x: 80, y: 140}, {x: 120, y: 120}, 
-                  {x: 160, y: 100}, {x: 200, y: 90}, {x: 240, y: 85}, 
-                  {x: 280, y: 80}, {x: 320, y: 75}, {x: 360, y: 70}
-                ].map((point, i) => (
-                  <circle key={i} cx={point.x} cy={point.y} r="4" fill="#8B5CF6"/>
-                ))}
-                
-                {/* Labels */}
-                <text x="40" y="185" textAnchor="middle" className="text-xs fill-gray-500">T1</text>
-                <text x="120" y="185" textAnchor="middle" className="text-xs fill-gray-500">T3</text>
-                <text x="200" y="185" textAnchor="middle" className="text-xs fill-gray-500">T5</text>
-                <text x="280" y="185" textAnchor="middle" className="text-xs fill-gray-500">T7</text>
-                <text x="360" y="185" textAnchor="middle" className="text-xs fill-gray-500">T9</text>
+                {/* Dữ liệu xu hướng từ backend */}
+                {dashboardData?.trendData && dashboardData.trendData.length > 0 && (() => {
+                  const trendData = dashboardData.trendData;
+                  const maxCount = Math.max(...trendData.map(d => d.count), 1);
+                  const points = trendData.map((data, index) => ({
+                    x: 40 + (index * 320 / (trendData.length - 1)),
+                    y: 160 - (data.count / maxCount) * 120
+                  }));
+                  
+                  const pointsStr = points.map(p => `${p.x},${p.y}`).join(' ');
+                  const polygonPoints = `${pointsStr} 360,160 40,160`;
+                  
+                  return (
+                    <>
+                      {/* Data line */}
+                      <polyline
+                        fill="none"
+                        stroke="#8B5CF6"
+                        strokeWidth="3"
+                        points={pointsStr}
+                      />
+                      
+                      {/* Fill area */}
+                      <polygon
+                        fill="url(#gradient)"
+                        points={polygonPoints}
+                      />
+                      
+                      {/* Data points */}
+                      {points.map((point, i) => (
+                        <circle key={i} cx={point.x} cy={point.y} r="4" fill="#8B5CF6"/>
+                      ))}
+                      
+                      {/* Hiển thị số lượng chính xác trên từng điểm */}
+                      {trendData.map((data, i) => (
+                        <text 
+                          key={`count-${i}`}
+                          x={points[i].x} 
+                          y={points[i].y - 10} 
+                          textAnchor="middle" 
+                          className="text-xs fill-gray-700 font-medium"
+                        >
+                          {data.count}
+                        </text>
+                      ))}
+                      
+                      {/* Labels - hiển thị thứ trong tuần */}
+                      {trendData.map((data, i) => (
+                        <text 
+                          key={i} 
+                          x={points[i].x} 
+                          y="185" 
+                          textAnchor="middle" 
+                          className="text-xs fill-gray-500"
+                        >
+                          {data.date}
+                        </text>
+                      ))}
+                    </>
+                  );
+                })()}
               </svg>
             </div>
           </div>
@@ -238,31 +270,40 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold text-gray-900 mb-6">Phân bố điểm đánh giá</h2>
             <div className="h-64 relative">
               <svg className="w-full h-full" viewBox="0 0 400 200">
-                {/* Bars */}
-                {[
-                  {x: 60, height: 20, label: '1★', count: 12},
-                  {x: 120, height: 35, label: '2★', count: 28},
-                  {x: 180, height: 80, label: '3★', count: 156},
-                  {x: 240, height: 120, label: '4★', count: 324},
-                  {x: 300, height: 140, label: '5★', count: 589}
-                ].map((bar, i) => (
-                  <g key={i}>
-                    <rect
-                      x={bar.x - 15}
-                      y={160 - bar.height}
-                      width="30"
-                      height={bar.height}
-                      fill={`url(#barGradient${i})`}
-                      rx="4"
-                    />
-                    <text x={bar.x} y="180" textAnchor="middle" className="text-xs fill-gray-600">
-                      {bar.label}
-                    </text>
-                    <text x={bar.x} y={160 - bar.height - 5} textAnchor="middle" className="text-xs fill-gray-700 font-medium">
-                      {bar.count}
-                    </text>
-                  </g>
-                ))}
+                {/* Dữ liệu phân bố điểm từ backend */}
+                {dashboardData?.ratingDistribution && (() => {
+                  const distribution = dashboardData.ratingDistribution;
+                  const maxCount = Math.max(...Object.values(distribution), 1);
+                  const bars = [1, 2, 3, 4, 5].map((rating, index) => ({
+                    x: 60 + index * 60,
+                    height: (distribution[rating] / maxCount) * 120,
+                    label: `${rating}★`,
+                    count: distribution[rating]
+                  }));
+                  
+                  return (
+                    <>
+                      {bars.map((bar, i) => (
+                        <g key={i}>
+                          <rect
+                            x={bar.x - 15}
+                            y={160 - bar.height}
+                            width="30"
+                            height={bar.height}
+                            fill={`url(#barGradient${i})`}
+                            rx="4"
+                          />
+                          <text x={bar.x} y="180" textAnchor="middle" className="text-xs fill-gray-600">
+                            {bar.label}
+                          </text>
+                          <text x={bar.x} y={160 - bar.height - 5} textAnchor="middle" className="text-xs fill-gray-700 font-medium">
+                            {bar.count}
+                          </text>
+                        </g>
+                      ))}
+                    </>
+                  );
+                })()}
                 
                 <defs>
                   {[0, 1, 2, 3, 4].map(i => (

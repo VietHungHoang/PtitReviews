@@ -8,6 +8,7 @@ import com.vhh.ptit_reviews.domain.response.ApiResponse;
 import com.vhh.ptit_reviews.domain.response.ReviewResponse;
 import com.vhh.ptit_reviews.domain.response.ReviewHistoryItemResponse;
 import com.vhh.ptit_reviews.domain.response.UserReviewsResponse;
+import com.vhh.ptit_reviews.domain.response.AdminDetailedReviewsResponse;
 import com.vhh.ptit_reviews.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 
@@ -83,6 +84,15 @@ public class ReviewController {
             @RequestParam(required = false) String search) {
         AdminReviewsResponse reviews = reviewService.getAllReviews(page, limit, search);
         return ResponseEntity.ok(ApiResponse.success(reviews, "Reviews retrieved successfully"));
+    }
+
+    @GetMapping("/detailed")
+    public ResponseEntity<ApiResponse<AdminDetailedReviewsResponse>> getDetailedReviews(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String search) {
+        AdminDetailedReviewsResponse response = reviewService.getDetailedReviews(page, limit, search);
+        return ResponseEntity.ok(ApiResponse.success(response, "Detailed reviews retrieved successfully"));
     }
 
     @DeleteMapping("/{reviewId}")

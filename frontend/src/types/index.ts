@@ -98,6 +98,7 @@ export interface Analytics {
     preview: string;
     createdAt: string;
   }>;
+  ratingDistribution: Record<number, number>; // Phân bố điểm đánh giá (1-5 sao)
 }
 
 export interface NotificationProps {
@@ -139,6 +140,8 @@ export interface CategoryReviewHistory {
   name: string;
   rate: number;
   comment: string;
+  subjects?: string[] | null;   // Danh sách môn học (null nếu không phải category môn học)
+  lecturers?: string[] | null;  // Danh sách giảng viên (null nếu không phải category giảng viên)
 }
 
 export interface ReviewHistoryItem {

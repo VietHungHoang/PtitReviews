@@ -21,6 +21,12 @@ export default function CategorySelection() {
   
   const { data: categoriesData, loading, error } = useApi(() => categoriesApi.getCategories(), []);
   const categories = categoriesData || [];
+  
+  // Debug log
+  console.log('Categories data:', categoriesData);
+  console.log('Categories array:', categories);
+  console.log('Loading:', loading);
+  console.log('Error:', error);
 
   const handleCategoryToggle = (category: Category) => {
     setSelectedCategories(prev => {
@@ -68,7 +74,18 @@ export default function CategorySelection() {
         {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {categories.map((category) => {
-            const IconComponent = iconMap[category.icon as keyof typeof iconMap];
+            // Default icon mapping based on category name if icon is not in iconMap
+            let IconComponent = iconMap[category.icon as keyof typeof iconMap];
+            if (!IconComponent) {
+              // Fallback icons based on category name
+              if (category.name?.includes('Giảng viên')) IconComponent = Users;
+              else if (category.name?.includes('Môn học')) IconComponent = BookOpen;
+              else if (category.name?.includes('Cơ sở vật chất')) IconComponent = Building2;
+              else if (category.name?.includes('Thư viện')) IconComponent = Library;
+              else if (category.name?.includes('đăng ký')) IconComponent = Calendar;
+              else IconComponent = HelpCircle; // Default fallback
+            }
+            
             const isSelected = selectedCategories.some(c => c.id === category.id);
             
             return (

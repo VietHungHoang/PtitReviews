@@ -11,6 +11,8 @@ import com.vhh.ptit_reviews.domain.response.ReviewResponse;
 import com.vhh.ptit_reviews.repository.*;
 import com.vhh.ptit_reviews.domain.response.ReviewHistoryItemResponse;
 import com.vhh.ptit_reviews.domain.response.CategoryReviewHistoryResponse;
+import com.vhh.ptit_reviews.domain.response.AdminDetailedReviewsResponse;
+import com.vhh.ptit_reviews.domain.response.AdminDetailedReviewItemResponse;
 import com.vhh.ptit_reviews.service.AIService;
 import com.vhh.ptit_reviews.service.ReviewService;
 import com.vhh.ptit_reviews.service.mapper.ReviewMapper;
@@ -161,11 +163,37 @@ public class ReviewServiceImpl implements ReviewService {
         for (Review review : reviews) {
             List<CategoryReviewHistoryResponse> categories = review.getReviewCategories() != null
                     ? review.getReviewCategories().stream()
-                        .map(rc -> new CategoryReviewHistoryResponse(
-                                rc.getCategory().getName(),
-                                rc.getRate(),
-                                rc.getReviewText()
-                        ))
+                        .map(rc -> {
+                            // Lấy danh sách subjects từ ReviewCategoryItem
+                            List<String> subjects = rc.getReviewCategoryItems() != null
+                                    ? rc.getReviewCategoryItems().stream()
+                                        .filter(item -> item.getSubject() != null)
+                                        .map(item -> item.getSubject().getName())
+                                        .distinct()
+                                        .toList()
+                                    : null;
+                            
+                            // Lấy danh sách lecturers từ ReviewCategoryItem
+                            List<String> lecturers = rc.getReviewCategoryItems() != null
+                                    ? rc.getReviewCategoryItems().stream()
+                                        .filter(item -> item.getLecturer() != null)
+                                        .map(item -> item.getLecturer().getName())
+                                        .distinct()
+                                        .toList()
+                                    : null;
+                            
+                            // Nếu không có subjects hoặc lecturers, set về null
+                            List<String> finalSubjects = (subjects != null && !subjects.isEmpty()) ? subjects : null;
+                            List<String> finalLecturers = (lecturers != null && !lecturers.isEmpty()) ? lecturers : null;
+                            
+                            return new CategoryReviewHistoryResponse(
+                                    rc.getCategory().getName(),
+                                    rc.getRate(),
+                                    rc.getReviewText(),
+                                    finalSubjects,
+                                    finalLecturers
+                            );
+                        })
                         .toList()
                     : List.of();
 
@@ -248,5 +276,93 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new RuntimeException("Review not found with id: " + reviewId));
         reviewRepository.delete(review);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminDetailedReviewsResponse getDetailedReviews(int page, int limit, String search) {
+        List<Review> allReviews = reviewRepository.findAll();
+        
+        // Filter by search if provided
+        if (search != null && !search.trim().isEmpty()) {
+            String searchLower = search.toLowerCase();
+            allReviews = allReviews.stream()
+                    .filter(review -> 
+                        review.getUser().getName().toLowerCase().contains(searchLower) ||
+                        review.getUser().getCode().toLowerCase().contains(searchLower) ||
+                        (review.getCommonReview() != null && review.getCommonReview().toLowerCase().contains(searchLower)) ||
+                        review.getReviewCategories().stream().anyMatch(rc -> 
+                            rc.getCategory().getName().toLowerCase().contains(searchLower) ||
+                            (rc.getReviewText() != null && rc.getReviewText().toLowerCase().contains(searchLower))
+                        )
+                    )
+                    .toList();
+        }
+        
+        // Calculate pagination
+        long total = allReviews.size();
+        int totalPages = (int) Math.ceil((double) total / limit);
+        int startIndex = page * limit;
+        int endIndex = Math.min(startIndex + limit, allReviews.size());
+        
+        List<Review> paginatedReviews = allReviews.subList(startIndex, endIndex);
+        
+        // Map to detailed DTOs  
+        List<AdminDetailedReviewItemResponse> reviewItems = paginatedReviews.stream()
+                .map(review -> {
+                    List<CategoryReviewHistoryResponse> categories = review.getReviewCategories() != null
+                            ? review.getReviewCategories().stream()
+                                .map(rc -> {
+                                    // Lấy danh sách subjects từ ReviewCategoryItem
+                                    List<String> subjects = rc.getReviewCategoryItems() != null
+                                            ? rc.getReviewCategoryItems().stream()
+                                                .filter(item -> item.getSubject() != null)
+                                                .map(item -> item.getSubject().getName())
+                                                .distinct()
+                                                .toList()
+                                            : null;
+                                    
+                                    // Lấy danh sách lecturers từ ReviewCategoryItem
+                                    List<String> lecturers = rc.getReviewCategoryItems() != null
+                                            ? rc.getReviewCategoryItems().stream()
+                                                .filter(item -> item.getLecturer() != null)
+                                                .map(item -> item.getLecturer().getName())
+                                                .distinct()
+                                                .toList()
+                                            : null;
+                                    
+                                    // Nếu không có subjects hoặc lecturers, set về null
+                                    List<String> finalSubjects = (subjects != null && !subjects.isEmpty()) ? subjects : null;
+                                    List<String> finalLecturers = (lecturers != null && !lecturers.isEmpty()) ? lecturers : null;
+                                    
+                                    return new CategoryReviewHistoryResponse(
+                                            rc.getCategory().getName(),
+                                            rc.getRate(),
+                                            rc.getReviewText(),
+                                            finalSubjects,
+                                            finalLecturers
+                                    );
+                                })
+                                .toList()
+                            : List.of();
+
+                    return AdminDetailedReviewItemResponse.builder()
+                            .id(review.getId())
+                            .userName(review.getUser().getName())
+                            .userCode(review.getUser().getCode())
+                            .categories(categories)
+                            .generalFeedback(review.getCommonReview())
+                            .createdAt(review.getCreatedAt())
+                            .build();
+                })
+                .toList();
+        
+        // Create response with pagination metadata
+        return AdminDetailedReviewsResponse.builder()
+                .reviews(reviewItems)
+                .currentPage(page)
+                .totalPages(totalPages)
+                .totalItems(total)
+                .build();
     }
 }

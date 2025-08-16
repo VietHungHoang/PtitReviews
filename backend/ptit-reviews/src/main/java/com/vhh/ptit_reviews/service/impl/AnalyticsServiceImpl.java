@@ -11,7 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -43,6 +42,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         // Đánh giá gần đây (5 đánh giá mới nhất)
         List<RecentReviewResponse> recentReviews = getRecentReviews();
         
+        // Phân bố điểm đánh giá
+        Map<Integer, Long> ratingDistribution = getRatingDistribution();
+        
         return new DashboardStatsResponse(
             totalReviews,
             approvedReviews,
@@ -51,7 +53,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             averageRating,
             reviewsByCategory,
             trendData,
-            recentReviews
+            recentReviews,
+            ratingDistribution
         );
     }
 
@@ -134,12 +137,13 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     private List<TrendDataResponse> getTrendData() {
         List<TrendDataResponse> trendData = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         
-        // Lấy dữ liệu 7 ngày gần đây
+        // Lấy dữ liệu 7 ngày gần đây (1 tuần)
         for (int i = 6; i >= 0; i--) {
             LocalDateTime date = LocalDateTime.now().minusDays(i);
-            String dateStr = date.format(formatter);
+            
+            // Format ngày theo định dạng ngắn (T2, T3, T4, ...)
+            String dayOfWeekLabel = getDayOfWeekLabel(date.getDayOfWeek().getValue());
             
             LocalDateTime startOfDay = date.toLocalDate().atStartOfDay();
             LocalDateTime endOfDay = date.toLocalDate().atTime(23, 59, 59);
@@ -152,10 +156,23 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             Double avgRatingResult = reviewRepository.findAverageRatingBetween(startOfDay, endOfDay);
             Double avgRating = avgRatingResult != null ? avgRatingResult : 0.0;
             
-            trendData.add(new TrendDataResponse(dateStr, count, avgRating));
+            trendData.add(new TrendDataResponse(dayOfWeekLabel, count, avgRating));
         }
         
         return trendData;
+    }
+    
+    private String getDayOfWeekLabel(int dayOfWeek) {
+        return switch (dayOfWeek) {
+            case 1 -> "T2"; // Monday
+            case 2 -> "T3"; // Tuesday
+            case 3 -> "T4"; // Wednesday
+            case 4 -> "T5"; // Thursday
+            case 5 -> "T6"; // Friday
+            case 6 -> "T7"; // Saturday
+            case 7 -> "CN"; // Sunday
+            default -> "T" + dayOfWeek;
+        };
     }
 
     private List<RecentReviewResponse> getRecentReviews() {
@@ -193,5 +210,37 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         }
         
         return recentReviews;
+    }
+    
+    private Map<Integer, Long> getRatingDistribution() {
+        List<Object[]> results = reviewRepository.findRatingDistribution();
+        Map<Integer, Long> distribution = new HashMap<>();
+        
+        // Khởi tạo tất cả các rating từ 1-5 với giá trị 0
+        for (int i = 1; i <= 5; i++) {
+            distribution.put(i, 0L);
+        }
+        
+        // Cập nhật với dữ liệu thực tế
+        for (Object[] result : results) {
+            Integer rating = (Integer) result[0];
+            
+            // Safe casting for count
+            Long count;
+            Object countObj = result[1];
+            if (countObj instanceof Integer) {
+                count = ((Integer) countObj).longValue();
+            } else if (countObj instanceof Long) {
+                count = (Long) countObj;
+            } else {
+                count = 0L;
+            }
+            
+            if (rating >= 1 && rating <= 5) {
+                distribution.put(rating, count);
+            }
+        }
+        
+        return distribution;
     }
 }

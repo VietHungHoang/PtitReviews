@@ -22,19 +22,17 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('authToken');
-      if (token) {
+      const savedUser = localStorage.getItem('userData');
+      
+      if (token && savedUser) {
         try {
-          // You could add a /auth/me endpoint to verify token and get user info
-          // For now, we'll just assume token is valid
-          const mockUser = {
-            id: '1',
-            name: 'Current User',
-            email: 'user@ptit.edu.vn',
-            role: 'student' as const
-          };
-          setUser(mockUser);
+          // Restore user from localStorage
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
         } catch (error) {
+          // If there's an error parsing user data, clear everything
           localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
         }
       }
       setIsLoading(false);
@@ -45,6 +43,9 @@ function App() {
 
   const handleLogin = (userData: User) => {
     setUser(userData);
+    // Save user data to localStorage
+    localStorage.setItem('userData', JSON.stringify(userData));
+    
     // Redirect based on role
     if (userData.role.toLowerCase() === 'admin') {
       navigate('/admin/dashboard');
@@ -61,6 +62,7 @@ function App() {
     }
     setUser(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userData'); // Also remove user data
     navigate('/login');
   };
 
@@ -74,7 +76,7 @@ function App() {
     navigate('/');
   };
 
-  const handleDeleteReview = (reviewId: string) => {
+  const handleDeleteReview = (reviewId: number) => {
     setNotification({
       type: 'success',
       title: 'Đã xóa đánh giá',

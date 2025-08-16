@@ -1,4 +1,4 @@
-import { AuthLogin, AuthLoginResponse, Category, CategoryInfo, Lecturer, ReviewCreateResponse, ReviewRequest, Subject, UserReviewsResponse } from "../types";
+import { AuthLogin, AuthLoginResponse, Category, CategoryInfo, Lecturer, ReviewCreateResponse, ReviewRequest, ReviewHistoryItem, Subject, UserReviewsResponse } from "../types";
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
@@ -158,6 +158,33 @@ export const reviewsApi = {
     return apiCall<{ review: any }>(`/reviews/${id}`);
   },
 
+  // Admin detailed reviews (similar to student review history)
+  getDetailedReviews: async (params?: {
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    
+    const endpoint = `/reviews/detailed${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return apiCall<{
+      reviews: Array<ReviewHistoryItem & {
+        userName: string;
+        userCode: string;
+      }>;
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+    }>(endpoint);
+  },
+
   deleteReview: async (id: string) => {
     return apiCall<null>(`/reviews/${id}`, {
       method: 'DELETE',
@@ -208,6 +235,7 @@ export const analyticsApi = {
         preview: string;
         createdAt: string;
       }>;
+      ratingDistribution: Record<number, number>; // Phân bố điểm đánh giá (1-5 sao)
     }>('/analytics/dashboard');
   },
 

@@ -5,7 +5,7 @@ spring:
         servlet:
             path: /api/v1
     datasource:
-        url: jdbc:mysql://localhost:3306/ptit_reviews?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true
+        url: jdbc:mysql://localhost:3306/ptit_reviews?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true&characterEncoding=utf8&useUnicode=true
         username: root
         password: root
         drive-class-name: com.mysql.cj.jdbc.Driver
@@ -17,6 +17,5 @@ spring:
                 dialect: org.hibernate.dialect.MySQL8Dialect
                 format_sql: true
         show-sql: true
-
 gemini:
   api-key: AIzaSyDTf-cBEQUE57RHaQ0mjlAUtJarOv1UFOQ
