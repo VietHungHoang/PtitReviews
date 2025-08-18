@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { Answer, Category, CategoryRequest, QuestionRequest, ReviewRequest, ReviewCreateResponse } from '../../types';
@@ -12,6 +12,11 @@ interface ReviewFormProps {
 
 export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
   const navigate = useNavigate();
+  
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   
   // Get selected categories from sessionStorage
   const getSelectedCategories = (): Category[] => {
@@ -221,10 +226,12 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
               ← Quay lại chọn chủ đề
             </button>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Đánh giá chi tiết</h1>
-            <p className="text-gray-600">
+                        <p className="text-gray-600">
               Chia sẻ trải nghiệm của bạn về {selectedCategories.map(cat => cat.name).join(', ')}
             </p>
           </div>
+
+          {/* Hiển thị các category với câu hỏi */}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {categoryInfos.map((category) => (
@@ -234,7 +241,15 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
                   <h3 className="text-xl font-semibold text-gray-800">{category.categoryName}</h3>
                 </div>
 
-                {/* Service Usage Check */}
+                {/* Item Selection for subjects/lecturers - hiện trước */}
+                <ItemSelection
+                  categoryId={category.categoryId}
+                  categoryName={category.categoryName}
+                  selectedItems={selectedItems[category.categoryId] || []}
+                  onItemsChange={(items) => handleItemsChange(category.categoryId, items)}
+                />
+
+                {/* Questions - hiện sau ItemSelection */}
                 {category.questions.map(question => (
                   <div key={question.id} className="mb-6">
                     <p className="text-sm font-medium text-gray-700 mb-3">{question.content}</p>
@@ -256,88 +271,35 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
                   </div>
                 ))}
 
-                {/* Only check for the first question */}
-                {category.questions.length > 0 && selectedAnswers[category.questions[0].id]?.correct === true && (
-                  <>
-                    {/* Item Selection for subjects/lecturers */}
-                    <ItemSelection
-                      categoryId={category.categoryId}
-                      categoryName={category.categoryName}
-                      selectedItems={selectedItems[category.categoryId] || []}
-                      onItemsChange={(items) => handleItemsChange(category.categoryId, items)}
-                    />
-
-                    {/* Rating */}
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Đánh giá tổng thể (1-5 sao)
-                      </label>
-                      {renderStars(category.categoryId, ratings[category.categoryId] || 0)}
-                      {ratings[category.categoryId] && (
-                        <p className="text-sm text-gray-600 mt-2">
-                          Bạn đã chọn {ratings[category.categoryId]} sao
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Comment */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Nhận xét chi tiết (tối thiểu 10 ký tự)
-                      </label>
-                      <textarea
-                        value={comments[category.categoryId] || ''}
-                        onChange={(e) => handleCommentChange(category.categoryId, e.target.value)}
-                        placeholder={`Chia sẻ trải nghiệm của bạn về ${category.categoryName.toLowerCase()}...`}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                        rows={4}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {comments[category.categoryId]?.length || 0} ký tự
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {category.questions.length > 0 && selectedAnswers[category.questions[0].id]?.correct === false && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Lưu ý:</strong> Bạn chưa trải nghiệm {category.categoryName.toLowerCase()}, 
-                      nhưng vẫn có thể đánh giá dựa trên thông tin bạn biết. Tuy nhiên, chúng tôi khuyến khích 
-                      bạn trải nghiệm trực tiếp để có đánh giá chính xác nhất.
+                {/* Rating */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Đánh giá tổng thể (1-5 sao)
+                  </label>
+                  {renderStars(category.categoryId, ratings[category.categoryId] || 0)}
+                  {ratings[category.categoryId] && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Bạn đã chọn {ratings[category.categoryId]} sao
                     </p>
-                    
-                    {/* Still allow rating and comment even if not used */}
-                    <div className="mt-4">
-                      <ItemSelection
-                        categoryId={category.categoryId}
-                        categoryName={category.categoryName}
-                        selectedItems={selectedItems[category.categoryId] || []}
-                        onItemsChange={(items) => handleItemsChange(category.categoryId, items)}
-                      />
+                  )}
+                </div>
 
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                          Đánh giá dựa trên thông tin bạn biết (1-5 sao)
-                        </label>
-                        {renderStars(category.categoryId, ratings[category.categoryId] || 0)}
-                      </div>
-
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                          Nhận xét (dựa trên thông tin bạn có)
-                        </label>
-                        <textarea
-                          value={comments[category.categoryId] || ''}
-                          onChange={(e) => handleCommentChange(category.categoryId, e.target.value)}
-                          placeholder={`Chia sẻ những gì bạn biết về ${category.categoryName.toLowerCase()}...`}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                          rows={4}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Comment */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Nhận xét chi tiết (tối thiểu 10 ký tự)
+                  </label>
+                  <textarea
+                    value={comments[category.categoryId] || ''}
+                    onChange={(e) => handleCommentChange(category.categoryId, e.target.value)}
+                    placeholder={`Chia sẻ trải nghiệm của bạn về ${category.categoryName.toLowerCase()}...`}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    rows={4}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {comments[category.categoryId]?.length || 0} ký tự
+                  </p>
+                </div>
               </div>
             ))}
 

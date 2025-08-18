@@ -125,10 +125,10 @@ export default function ReviewHistory({ userId }: ReviewHistoryProps) {
 
                   {/* Chi tiết đánh giá - hiển thị bên dưới button với animation đơn giản */}
                   <div 
-                    className={`transition-all duration-500 ease-out overflow-hidden ${
+                    className={`transition-all duration-500 ease-out ${
                       isExpanded 
-                        ? 'max-h-96 opacity-100' 
-                        : 'max-h-0 opacity-0'
+                        ? 'max-h-none opacity-100' 
+                        : 'max-h-0 opacity-0 overflow-hidden'
                     }`}
                   >
                     <div className="pt-4 border-t">
@@ -182,6 +182,21 @@ export default function ReviewHistory({ userId }: ReviewHistoryProps) {
                                     >
                                       {lecturer}
                                     </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Hiển thị câu hỏi và câu trả lời */}
+                            {category.questionAnswers && category.questionAnswers.length > 0 && (
+                              <div className="mb-3">
+                                <h6 className="text-sm font-medium text-gray-800 mb-2">Câu trả lời:</h6>
+                                <div className="space-y-1">
+                                  {category.questionAnswers.map((qa, qaIdx) => (
+                                    <div key={qaIdx} className="text-sm">
+                                      <span className="font-medium text-gray-700">{qa.title}:</span>
+                                      <span className="text-gray-600 ml-1">{qa.answer}</span>
+                                    </div>
                                   ))}
                                 </div>
                               </div>

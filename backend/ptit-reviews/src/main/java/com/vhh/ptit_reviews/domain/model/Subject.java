@@ -25,7 +25,7 @@ public class Subject {
 
     @ManyToOne
     @JoinColumn(name = "subject_category_id")
-    private SubjectCategory subjectCategory;
+    private Category subjectCategory;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -11,6 +11,7 @@ import com.vhh.ptit_reviews.domain.response.ReviewResponse;
 import com.vhh.ptit_reviews.repository.*;
 import com.vhh.ptit_reviews.domain.response.ReviewHistoryItemResponse;
 import com.vhh.ptit_reviews.domain.response.CategoryReviewHistoryResponse;
+import com.vhh.ptit_reviews.domain.response.QuestionAnswerResponse;
 import com.vhh.ptit_reviews.domain.response.AdminDetailedReviewsResponse;
 import com.vhh.ptit_reviews.domain.response.AdminDetailedReviewItemResponse;
 import com.vhh.ptit_reviews.service.AIService;
@@ -186,12 +187,23 @@ public class ReviewServiceImpl implements ReviewService {
                             List<String> finalSubjects = (subjects != null && !subjects.isEmpty()) ? subjects : null;
                             List<String> finalLecturers = (lecturers != null && !lecturers.isEmpty()) ? lecturers : null;
                             
+                            // Lấy question answers từ ReviewQuestion
+                            List<QuestionAnswerResponse> questionAnswers = rc.getReviewQuestions() != null
+                                    ? rc.getReviewQuestions().stream()
+                                        .map(rq -> QuestionAnswerResponse.builder()
+                                                .title(rq.getQuestion().getTitle())
+                                                .answer(rq.getAnswer().getContent())
+                                                .build())
+                                        .toList()
+                                    : List.of();
+                            
                             return new CategoryReviewHistoryResponse(
                                     rc.getCategory().getName(),
                                     rc.getRate(),
                                     rc.getReviewText(),
                                     finalSubjects,
-                                    finalLecturers
+                                    finalLecturers,
+                                    questionAnswers
                             );
                         })
                         .toList()
@@ -335,12 +347,23 @@ public class ReviewServiceImpl implements ReviewService {
                                     List<String> finalSubjects = (subjects != null && !subjects.isEmpty()) ? subjects : null;
                                     List<String> finalLecturers = (lecturers != null && !lecturers.isEmpty()) ? lecturers : null;
                                     
+                                    // Lấy question answers từ ReviewQuestion
+                                    List<QuestionAnswerResponse> questionAnswers = rc.getReviewQuestions() != null
+                                            ? rc.getReviewQuestions().stream()
+                                                .map(rq -> QuestionAnswerResponse.builder()
+                                                        .title(rq.getQuestion().getTitle())
+                                                        .answer(rq.getAnswer().getContent())
+                                                        .build())
+                                                .toList()
+                                            : List.of();
+                                    
                                     return new CategoryReviewHistoryResponse(
                                             rc.getCategory().getName(),
                                             rc.getRate(),
                                             rc.getReviewText(),
                                             finalSubjects,
-                                            finalLecturers
+                                            finalLecturers,
+                                            questionAnswers
                                     );
                                 })
                                 .toList()

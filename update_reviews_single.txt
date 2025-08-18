@@ -1,0 +1,14 @@
+-- ========================================
+-- ALTERNATIVE: UPDATE ALL REVIEWS AT ONCE USING MYSQL RAND()
+-- ========================================
+
+-- Update all reviews with random dates in the last week
+UPDATE reviews SET
+  created_at = DATE_SUB(NOW(), INTERVAL FLOOR(RAND() * 7) DAY) +
+               INTERVAL FLOOR(RAND() * 24) HOUR +
+               INTERVAL FLOOR(RAND() * 60) MINUTE +
+               INTERVAL FLOOR(RAND() * 60) SECOND,
+  updated_at = created_at + INTERVAL FLOOR(RAND() * 3600) SECOND
+WHERE id BETWEEN 1 AND 1500;
+
+-- This single query will update all 1500 reviews at once

@@ -135,6 +135,12 @@ export interface ReviewCreateResponse {
   errors: string[];
 }
 
+// Question Answer pair for review history
+export interface QuestionAnswer {
+  title: string;
+  answer: string;
+}
+
 // Student review history
 export interface CategoryReviewHistory {
   name: string;
@@ -142,6 +148,7 @@ export interface CategoryReviewHistory {
   comment: string;
   subjects?: string[] | null;   // Danh sách môn học (null nếu không phải category môn học)
   lecturers?: string[] | null;  // Danh sách giảng viên (null nếu không phải category giảng viên)
+  questionAnswers: QuestionAnswer[];  // Danh sách câu hỏi-câu trả lời
 }
 
 export interface ReviewHistoryItem {

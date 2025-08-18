@@ -21,13 +21,13 @@ export default function ItemSelection({ categoryId, categoryName, selectedItems,
     () => lecturersApi.getLecturers());
 
   const getItems = () => {
-    if (categoryId === 1) return subjectsData || [];
-    if (categoryId === 2) return lecturersData || [];
+    if (categoryId === 1) return lecturersData || []; // Category 1 = Giảng viên -> hiển thị lecturers
+    if (categoryId === 2) return subjectsData || [];  // Category 2 = Môn học -> hiển thị subjects
     return [];
   };
   
   const items = getItems();
-  const isLoading = categoryId === 1 ? subjectsLoading : lecturersLoading;
+  const isLoading = categoryId === 1 ? lecturersLoading : subjectsLoading;
 
   const handleItemToggle = (itemId: number) => {
     const newSelectedItems = selectedItems.includes(itemId)
@@ -87,7 +87,7 @@ export default function ItemSelection({ categoryId, categoryName, selectedItems,
                   )}
                   {'department' in item && (
                     <p className="text-xs text-gray-500 mt-1">
-                      {item.department} • {item.specialization}
+                      {item.department}
                     </p>
                   )}
                 </div>

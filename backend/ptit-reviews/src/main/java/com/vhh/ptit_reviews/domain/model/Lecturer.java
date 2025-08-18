@@ -24,7 +24,7 @@ public class Lecturer {
 
     @ManyToOne
     @JoinColumn(name = "lecturer_category_id")
-    private LecturerCategory lecturerCategory;
+    private Category lecturerCategory;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
