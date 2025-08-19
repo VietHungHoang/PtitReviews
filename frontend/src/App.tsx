@@ -31,8 +31,7 @@ function App() {
           setUser(userData);
         } catch (error) {
           // If there's an error parsing user data, clear everything
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('userData');
+          clearAllAuthData();
         }
       }
       setIsLoading(false);
@@ -40,6 +39,14 @@ function App() {
 
     checkAuth();
   }, []);
+
+  // Helper function to clear all authentication data
+  const clearAllAuthData = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('rememberedEmail');
+    localStorage.removeItem('rememberedPassword');
+  };
 
   const handleLogin = (userData: User) => {
     setUser(userData);
@@ -61,8 +68,7 @@ function App() {
       console.error('Logout error:', error);
     }
     setUser(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData'); // Also remove user data
+    clearAllAuthData();
     navigate('/login');
   };
 

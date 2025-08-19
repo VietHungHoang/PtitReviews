@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Facebook, Chrome, CheckCircle } from 'lucide-react';
+import { Mail, Lock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { authApi } from '../../services/api';
 import { useApiMutation } from '../../hooks/useApi';
 
@@ -20,6 +20,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     confirmPassword: '',
     studentId: ''
   });
+  const [loginError, setLoginError] = useState<string>(''); // Add login error state
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
     title: string;
@@ -27,6 +28,46 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   } | null>(null);
   const { mutate: loginMutation, isSubmitting, error } = useApiMutation();
   const { mutate: registerMutation } = useApiMutation();
+
+  // Function to generate email from name and student ID
+  const generateEmail = (fullName: string, studentId: string) => {
+    if (!fullName || !studentId) return '';
+    
+    // Split name into parts
+    const nameParts = fullName.trim().split(' ').filter(part => part.length > 0);
+    if (nameParts.length === 0) return '';
+    
+    // Get first name (last word) and initials from other words
+    const firstName = nameParts[nameParts.length - 1]; // Last word is first name
+    const otherParts = nameParts.slice(0, -1); // All words except the last one
+    const initials = otherParts.map(part => part.charAt(0)).join(''); // First letter of each word
+    
+    // Convert to lowercase and remove Vietnamese accents
+    const removeAccents = (str: string) => {
+      return str.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase();
+    };
+    
+    const firstNameClean = removeAccents(firstName);
+    const initialsClean = removeAccents(initials);
+    
+    // Format student ID: first 3 chars + last 5 chars (remove the middle part)
+    // Example: B21DCCN544 -> B21 + CN544 -> b21cn544
+    const studentIdFormatted = (studentId.substring(0, 3) + studentId.substring(studentId.length - 5)).toLowerCase();
+    
+    return `${firstNameClean}${initialsClean}.${studentIdFormatted}@stu.ptit.edu.vn`;
+  };
+
+  // Update email when name or student ID changes during registration
+  useEffect(() => {
+    if (!isLogin && name && code) {
+      const generatedEmail = generateEmail(name, code);
+      setEmail(generatedEmail);
+    }
+  }, [name, code, isLogin]);
 
   // Load saved credentials on component mount
   useEffect(() => {
@@ -66,39 +107,34 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     return '';
   };
 
-  // Handle input changes with validation
+  // Handle input changes without real-time validation
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = e.target.value;
     setPassword(newPassword);
-    setValidationErrors(prev => ({
-      ...prev,
-      password: validatePassword(newPassword),
-      confirmPassword: validateConfirmPassword(newPassword, confirmPassword)
-    }));
   };
 
   const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newConfirmPassword = e.target.value;
     setConfirmPassword(newConfirmPassword);
-    setValidationErrors(prev => ({
-      ...prev,
-      confirmPassword: validateConfirmPassword(password, newConfirmPassword)
-    }));
   };
 
   const handleStudentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStudentId = e.target.value.toUpperCase();
     setStudentId(newStudentId);
-    setValidationErrors(prev => ({
-      ...prev,
-      studentId: validateStudentId(newStudentId)
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate for registration
+    // Clear previous validation errors and login error
+    setValidationErrors({
+      password: '',
+      confirmPassword: '',
+      studentId: ''
+    });
+    setLoginError('');
+    
+    // Validate for registration only when submitting
     if (!isLogin) {
       const passwordError = validatePassword(password);
       const confirmPasswordError = validateConfirmPassword(password, confirmPassword);
@@ -166,27 +202,80 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           setNotification(null);
         }, 4000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Authentication error:', error);
+      
+      if (isLogin) {
+        // Handle LOGIN errors
+        if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error') || !error?.response) {
+          // Network error - show popup notification
+          setNotification({
+            type: 'error',
+            title: 'Lỗi kết nối!',
+            message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.'
+          });
+          setTimeout(() => setNotification(null), 6000);
+        } else if (error?.response?.status === 401 || error?.response?.status === 400) {
+          // Authentication failed - show error below form
+          setLoginError('Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
+        } else if (error?.response?.status >= 500) {
+          // Server error - show popup notification
+          setNotification({
+            type: 'error',
+            title: 'Lỗi máy chủ!',
+            message: 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.'
+          });
+          setTimeout(() => setNotification(null), 6000);
+        } else {
+          // Other errors - show error below form
+          setLoginError(error?.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+        }
+      } else {
+        // Handle REGISTER errors (existing logic)
+        let errorTitle = '';
+        let errorMessage = '';
+        
+        if (error?.response?.status === 409) {
+          // Conflict error - email or student ID already exists
+          errorTitle = 'Đăng ký thất bại!';
+          if (error?.response?.data?.message?.includes('email')) {
+            errorMessage = 'Email này đã được sử dụng. Vui lòng thử với email khác.';
+          } else if (error?.response?.data?.message?.includes('studentId') || error?.response?.data?.message?.includes('code')) {
+            errorMessage = 'Mã sinh viên này đã được đăng ký. Vui lòng kiểm tra lại.';
+          } else {
+            errorMessage = 'Email hoặc mã sinh viên đã tồn tại trong hệ thống.';
+          }
+        } else if (error?.response?.status === 400) {
+          // Bad request - validation errors from backend
+          errorTitle = 'Thông tin không hợp lệ!';
+          errorMessage = error?.response?.data?.message || 'Vui lòng kiểm tra lại thông tin đăng ký.';
+        } else if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error') || !error?.response) {
+          // Network error - cannot connect to backend
+          errorTitle = 'Lỗi kết nối!';
+          errorMessage = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.';
+        } else if (error?.response?.status >= 500) {
+          // Server error
+          errorTitle = 'Lỗi máy chủ!';
+          errorMessage = 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
+        } else {
+          // Generic error
+          errorTitle = 'Đăng ký thất bại!';
+          errorMessage = error?.response?.data?.message || error?.message || 'Đã xảy ra lỗi không xác định. Vui lòng thử lại.';
+        }
+        
+        // Show error notification for register
+        setNotification({
+          type: 'error',
+          title: errorTitle,
+          message: errorMessage
+        });
+        
+        // Clear error notification after 6 seconds
+        setTimeout(() => {
+          setNotification(null);
+        }, 6000);
+      }
     }
-  };
-
-  const handleSocialLogin = (provider: string) => {
-    // Mock admin login for demo
-    const isAdmin = provider === 'admin-demo';
-    const user = {
-      id: '1',
-      name: isAdmin ? 'Admin PTIT' : 'Nguyễn Văn A',
-      email: isAdmin ? 'admin@ptit.edu.vn' : 'nguyenvana@ptit.edu.vn',
-      studentId: isAdmin ? undefined : 'B20DCCN001',
-      role: isAdmin ? 'admin' : 'student',
-    };
-    
-    // Save mock token for social login
-    const mockToken = `mock_token_${provider}_${Date.now()}`;
-    localStorage.setItem('authToken', mockToken);
-    
-    onLogin(user);
   };
 
   const toggleLoginRegister = () => {
@@ -197,10 +286,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       confirmPassword: '',
       studentId: ''
     });
+    // Reset login error
+    setLoginError('');
     // Reset confirm password
     setConfirmPassword('');
     // Clear notification
     setNotification(null);
+    // Keep email when switching between modes
+    // Email will be preserved for both login and register
   };
 
   return (
@@ -210,10 +303,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg backdrop-blur-sm border transition-all duration-300 ${
           notification.type === 'success' 
             ? 'bg-green-100/80 border-green-200 text-green-800' 
-            : 'bg-red-100/80 border-red-200 text-red-800'
+            : notification.type === 'error'
+            ? 'bg-red-100/80 border-red-200 text-red-800'
+            : 'bg-blue-100/80 border-blue-200 text-blue-800'
         }`}>
           <div className="flex items-center space-x-2">
-            <CheckCircle className="w-5 h-5" />
+            {notification.type === 'success' && <CheckCircle className="w-5 h-5" />}
+            {notification.type === 'error' && <XCircle className="w-5 h-5" />}
+            {notification.type === 'info' && <AlertCircle className="w-5 h-5" />}
             <span className="font-medium">{notification.title}</span>
             <button
               onClick={() => setNotification(null)}
@@ -269,9 +366,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   type="text"
                   value={code}
                   onChange={handleStudentIdChange}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    validationErrors.studentId ? 'border-red-500' : 'border-gray-300'
-                  } focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200`}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                   placeholder="Ví dụ: B20DCCN001"
                   required={!isLogin}
                   disabled={isLogin}
@@ -286,24 +381,48 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </div>
             </div>
 
-            {/* Common fields - always visible */}
+            {/* Email field - visible for login, auto-generated for registration */}
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
-                    placeholder="Email của bạn"
-                    required
-                  />
+              {isLogin ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                      placeholder="Email của bạn"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                      placeholder="Email sẽ được tạo tự động hoặc bạn có thể nhập email khác"
+                      required={!isLogin}
+                    />
+                  </div>
+                  {name && code && email === generateEmail(name, code) && (
+                    <p className="mt-1 text-sm text-green-600">
+                      ✓ Email được tạo tự động từ tên và mã sinh viên
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -315,9 +434,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                     type="password"
                     value={password}
                     onChange={isLogin ? (e) => setPassword(e.target.value) : handlePasswordChange}
-                    className={`w-full pl-12 pr-4 py-3 rounded-lg border ${
-                      !isLogin && validationErrors.password ? 'border-red-500' : 'border-gray-300'
-                    } focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300`}
+                    className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                     placeholder="Nhập mật khẩu"
                     required
                   />
@@ -369,9 +486,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                     type="password"
                     value={confirmPassword}
                     onChange={handleConfirmPasswordChange}
-                    className={`w-full pl-12 pr-4 py-3 rounded-lg border ${
-                      validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                    } focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300`}
+                    className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                     placeholder="Nhập lại mật khẩu"
                     required={!isLogin}
                     disabled={isLogin}
@@ -387,7 +502,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </div>
             </div>
 
-            {error && (
+            {/* Login error - show below form for login */}
+            {isLogin && loginError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg animate-in slide-in-from-top duration-200">
+                <p className="text-red-700 text-sm">{loginError}</p>
+              </div>
+            )}
+
+            {/* General error - keep for register or other cases */}
+            {error && !isLogin && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg animate-in slide-in-from-top duration-200">
                 <p className="text-red-700 text-sm">{error}</p>
               </div>
@@ -411,6 +534,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             </div>
           </form>
 
+          {/* Temporarily commented out social login
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -438,6 +562,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </button>
             </div>
           </div>
+          */}
 
           <div className="mt-8 text-center">
             <button

@@ -51,7 +51,7 @@ public class GeminiService implements AIService {
             ngăn cách nhau bởi dấu chấm phẩy gồm duy nhất tên lỗi tương ứng theo các loại:
 
             NONE - Không lỗi
-            TOO_SHORT - Quá ngắn (dưới 5 ký tự)
+            TOO_SHORT - Quá ngắn (dưới 10 ký tự)
             BIASED - Thiên lệch hoặc cực đoan
             NON_MEANINGFUL - Không có nghĩa
             ONLY_SYMBOLS - Chỉ toàn ký tự đặc biệt hoặc số

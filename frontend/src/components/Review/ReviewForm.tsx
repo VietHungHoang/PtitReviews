@@ -82,7 +82,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
       return;
     }
 
-    if (generalFeedback.trim().length < 20) {
+    if (generalFeedback.trim().length < 10) {
       setNotificationType('error');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);

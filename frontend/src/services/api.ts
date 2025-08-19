@@ -1,6 +1,6 @@
 import { AuthLogin, AuthLoginResponse, Category, CategoryInfo, Lecturer, ReviewCreateResponse, ReviewRequest, ReviewHistoryItem, Subject, UserReviewsResponse } from "../types";
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'https://8080-viethunghoa-ptitreviews-yb6u5tzsd8g.ws-eu121.gitpod.io/api/v1';
 
 // API Response interface
 interface ApiResponse<T> {
