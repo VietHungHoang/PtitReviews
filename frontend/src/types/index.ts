@@ -78,6 +78,17 @@ export interface CategoryInfo {
   subjects: Subject[];
 }
 
+export interface WeeklyComparison {
+  thisWeekReviews: number;
+  lastWeekReviews: number;
+  thisWeekAvgRating: number;
+  lastWeekAvgRating: number;
+  reviewsChangePercent: string;
+  ratingChange: string;
+  reviewsChangeType: 'increase' | 'decrease' | 'no_change';
+  ratingChangeType: 'increase' | 'decrease' | 'no_change';
+}
+
 export interface Analytics {
   totalReviews: number;
   approvedReviews: number;
@@ -99,6 +110,7 @@ export interface Analytics {
     createdAt: string;
   }>;
   ratingDistribution: Record<number, number>; // Phân bố điểm đánh giá (1-5 sao)
+  weeklyComparison: WeeklyComparison; // So sánh tuần này với tuần trước
 }
 
 export interface NotificationProps {

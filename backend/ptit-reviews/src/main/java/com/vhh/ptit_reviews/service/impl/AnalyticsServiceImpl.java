@@ -3,6 +3,7 @@ package com.vhh.ptit_reviews.service.impl;
 import com.vhh.ptit_reviews.domain.response.DashboardStatsResponse;
 import com.vhh.ptit_reviews.domain.response.RecentReviewResponse;
 import com.vhh.ptit_reviews.domain.response.TrendDataResponse;
+import com.vhh.ptit_reviews.domain.response.WeeklyComparisonResponse;
 import com.vhh.ptit_reviews.repository.ReviewRepository;
 import com.vhh.ptit_reviews.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +11,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +48,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         // Phân bố điểm đánh giá
         Map<Integer, Long> ratingDistribution = getRatingDistribution();
         
+        // So sánh tuần này với tuần trước
+        WeeklyComparisonResponse weeklyComparison = getWeeklyComparison();
+        
         return new DashboardStatsResponse(
             totalReviews,
             approvedReviews,
@@ -54,7 +60,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
             reviewsByCategory,
             trendData,
             recentReviews,
-            ratingDistribution
+            ratingDistribution,
+            weeklyComparison
         );
     }
 
@@ -178,26 +185,65 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private List<RecentReviewResponse> getRecentReviews() {
         Pageable pageable = PageRequest.of(0, 4);
         List<Object[]> results = reviewRepository.findRecentReviews(pageable);
+        
+        if (results.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // Lấy danh sách review IDs
+        List<Long> reviewIds = results.stream()
+            .map(result -> (Long) result[0])
+            .collect(Collectors.toList());
+        
+        // Lấy lecturer names (chỉ cho category id = 1)
+        List<Object[]> lecturerResults = reviewRepository.findLecturerNamesByReviewIds(reviewIds);
+        Map<Long, List<String>> lecturerMap = new HashMap<>();
+        for (Object[] lecturerResult : lecturerResults) {
+            Long reviewId = (Long) lecturerResult[0];
+            String lecturerName = (String) lecturerResult[1];
+            lecturerMap.computeIfAbsent(reviewId, k -> new ArrayList<>()).add(lecturerName);
+        }
+        
+        // Lấy subject names (chỉ cho category id = 2)
+        List<Object[]> subjectResults = reviewRepository.findSubjectNamesByReviewIds(reviewIds);
+        Map<Long, List<String>> subjectMap = new HashMap<>();
+        for (Object[] subjectResult : subjectResults) {
+            Long reviewId = (Long) subjectResult[0];
+            String subjectName = (String) subjectResult[1];
+            subjectMap.computeIfAbsent(reviewId, k -> new ArrayList<>()).add(subjectName);
+        }
+        
         List<RecentReviewResponse> recentReviews = new ArrayList<>();
         
         for (Object[] result : results) {
             Long id = (Long) result[0];
             String userName = (String) result[1];
             String categoryName = (String) result[2];
+            Long categoryId = (Long) result[3];
             
             // Safe casting for rating - handle both Integer and Double
-            Double rating;
-            Object ratingObj = result[3];
+            Integer rating;
+            Object ratingObj = result[4];
             if (ratingObj instanceof Integer) {
-                rating = ((Integer) ratingObj).doubleValue();
+                rating = (Integer) ratingObj;
             } else if (ratingObj instanceof Double) {
-                rating = (Double) ratingObj;
+                rating = ((Double) ratingObj).intValue();
             } else {
-                rating = 0.0; // default value
+                rating = 0; // default value
             }
             
-            String reviewText = (String) result[4];
-            LocalDateTime createdAt = (LocalDateTime) result[5];
+            String reviewText = (String) result[5];
+            LocalDateTime createdAt = (LocalDateTime) result[6];
+            
+            // Lấy lecturer và subject names từ maps tùy theo categoryId
+            List<String> lecturerNames = new ArrayList<>();
+            List<String> subjectNames = new ArrayList<>();
+            
+            if (categoryId == 1L) { // Category giảng viên
+                lecturerNames = lecturerMap.getOrDefault(id, new ArrayList<>());
+            } else if (categoryId == 2L) { // Category môn học
+                subjectNames = subjectMap.getOrDefault(id, new ArrayList<>());
+            }
             
             // Tạo preview từ reviewText (50 ký tự đầu)
             String preview = reviewText != null && reviewText.length() > 50 
@@ -205,7 +251,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 : (reviewText != null ? reviewText : "Không có nhận xét");
             
             recentReviews.add(new RecentReviewResponse(
-                id, userName, categoryName, rating, preview, createdAt
+                id, userName, categoryName, categoryId, rating, preview, createdAt, lecturerNames, subjectNames
             ));
         }
         
@@ -242,5 +288,79 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         }
         
         return distribution;
+    }
+    
+    private WeeklyComparisonResponse getWeeklyComparison() {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Tìm đầu tuần này (thứ 2)
+        LocalDateTime startOfThisWeek = now.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+        LocalDateTime endOfThisWeek = startOfThisWeek.plusDays(6).toLocalDate().atTime(23, 59, 59);
+        
+        // Tìm đầu tuần trước (thứ 2 tuần trước)
+        LocalDateTime startOfLastWeek = startOfThisWeek.minusWeeks(1);
+        LocalDateTime endOfLastWeek = startOfLastWeek.plusDays(6).toLocalDate().atTime(23, 59, 59);
+        
+        // Đếm số đánh giá tuần này
+        Long thisWeekReviews = reviewRepository.countByCreatedAtBetween(startOfThisWeek, endOfThisWeek);
+        thisWeekReviews = thisWeekReviews != null ? thisWeekReviews : 0L;
+        
+        // Đếm số đánh giá tuần trước
+        Long lastWeekReviews = reviewRepository.countByCreatedAtBetween(startOfLastWeek, endOfLastWeek);
+        lastWeekReviews = lastWeekReviews != null ? lastWeekReviews : 0L;
+        
+        // Tính điểm trung bình tuần này
+        Double thisWeekAvgRating = reviewRepository.findAverageRatingBetween(startOfThisWeek, endOfThisWeek);
+        thisWeekAvgRating = thisWeekAvgRating != null ? thisWeekAvgRating : 0.0;
+        
+        // Tính điểm trung bình tuần trước
+        Double lastWeekAvgRating = reviewRepository.findAverageRatingBetween(startOfLastWeek, endOfLastWeek);
+        lastWeekAvgRating = lastWeekAvgRating != null ? lastWeekAvgRating : 0.0;
+        
+        // Tính % thay đổi số đánh giá
+        String reviewsChangePercent;
+        String reviewsChangeType;
+        if (lastWeekReviews == 0) {
+            reviewsChangePercent = thisWeekReviews > 0 ? "+100%" : "0%";
+            reviewsChangeType = thisWeekReviews > 0 ? "increase" : "no_change";
+        } else {
+            double percentChange = ((double) (thisWeekReviews - lastWeekReviews) / lastWeekReviews) * 100;
+            if (percentChange > 0) {
+                reviewsChangePercent = String.format("+%.0f%%", percentChange);
+                reviewsChangeType = "increase";
+            } else if (percentChange < 0) {
+                reviewsChangePercent = String.format("%.0f%%", percentChange);
+                reviewsChangeType = "decrease";
+            } else {
+                reviewsChangePercent = "0%";
+                reviewsChangeType = "no_change";
+            }
+        }
+        
+        // Tính thay đổi điểm trung bình
+        String ratingChange;
+        String ratingChangeType;
+        double ratingDiff = thisWeekAvgRating - lastWeekAvgRating;
+        if (ratingDiff > 0) {
+            ratingChange = String.format("+%.1f", ratingDiff);
+            ratingChangeType = "increase";
+        } else if (ratingDiff < 0) {
+            ratingChange = String.format("%.1f", ratingDiff);
+            ratingChangeType = "decrease";
+        } else {
+            ratingChange = "0.0";
+            ratingChangeType = "no_change";
+        }
+        
+        return new WeeklyComparisonResponse(
+            thisWeekReviews,
+            lastWeekReviews,
+            thisWeekAvgRating,
+            lastWeekAvgRating,
+            reviewsChangePercent,
+            ratingChange,
+            reviewsChangeType,
+            ratingChangeType
+        );
     }
 }

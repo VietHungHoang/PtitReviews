@@ -6,6 +6,48 @@ import { useApi } from '../../hooks/useApi';
 export default function Dashboard() {
   const { data: dashboardData, loading, error } = useApi(() => analyticsApi.getDashboard(), []);
   
+  // Helper function để format danh sách names với truncation
+  // Helper function để format danh sách tên với logic mới
+  const formatNames = (names: string[], type: 'lecturer' | 'subject'): string => {
+    if (!names || names.length === 0) return '';
+    
+    if (names.length === 1) {
+      return names[0];
+    } else {
+      const remaining = names.length - 1;
+      const suffix = type === 'lecturer' ? 'giảng viên khác' : 'môn học khác';
+      return `${names[0]} và ${remaining} ${suffix}`;
+    }
+  };
+
+  // Helper function để tạo category display text
+  const getCategoryDisplayText = (review: any): JSX.Element => {
+    const categoryName = review.categoryName;
+    
+    // Chỉ hiển thị lecturer names cho category id = 1 (giảng viên)
+    if (review.categoryId === 1 && review.lecturerNames && review.lecturerNames.length > 0) {
+      const lecturerText = formatNames(review.lecturerNames, 'lecturer');
+      return (
+        <span>
+          {categoryName}: <span className="text-gray-500 italic">{lecturerText}</span>
+        </span>
+      );
+    }
+    
+    // Chỉ hiển thị subject names cho category id = 2 (môn học)
+    if (review.categoryId === 2 && review.subjectNames && review.subjectNames.length > 0) {
+      const subjectText = formatNames(review.subjectNames, 'subject');
+      return (
+        <span>
+          {categoryName}: <span className="text-gray-500 italic">{subjectText}</span>
+        </span>
+      );
+    }
+    
+    // Nếu không có lecturer/subject names, chỉ hiển thị category name
+    return <span>{categoryName}</span>;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
@@ -28,16 +70,16 @@ export default function Dashboard() {
     {
       name: 'Tổng đánh giá',
       value: dashboardData?.totalReviews?.toString() || '0',
-      change: '+12%',
-      changeType: 'increase',
+      change: dashboardData?.weeklyComparison?.reviewsChangePercent || '0%',
+      changeType: dashboardData?.weeklyComparison?.reviewsChangeType || 'no_change',
       icon: MessageSquare,
       color: 'blue'
     },
     {
       name: 'Điểm TB',
       value: dashboardData?.averageRating?.toFixed(1) || '0.0',
-      change: '+0.3',
-      changeType: 'increase',
+      change: dashboardData?.weeklyComparison?.ratingChange || '+0.0',
+      changeType: dashboardData?.weeklyComparison?.ratingChangeType || 'no_change',
       icon: BarChart3,
       color: 'emerald'
     }
@@ -54,6 +96,8 @@ export default function Dashboard() {
         color: colors[index % colors.length]
       };
     }) : [];
+
+  const totalCategoryReviews = categoryStats.reduce((sum, category) => sum + category.count, 0);
 
   const recentReviews = dashboardData?.recentReviews || [];
 
@@ -99,11 +143,12 @@ export default function Dashboard() {
                     </div>
                     <div className="mt-4 flex items-center">
                       <span className={`text-sm font-medium ${
-                        stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
+                        stat.changeType === 'increase' ? 'text-green-600' : 
+                        stat.changeType === 'decrease' ? 'text-red-600' : 'text-gray-600'
                       }`}>
                         {stat.change}
                       </span>
-                      <span className="text-sm text-gray-500 ml-2">so với tháng trước</span>
+                      <span className="text-sm text-gray-500 ml-2">so với tuần trước</span>
                     </div>
                   </div>
                 );
@@ -113,7 +158,12 @@ export default function Dashboard() {
             {/* A21: Category Statistics */}
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20 flex-1">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Đánh giá theo danh mục</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Đánh giá theo danh mục</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Tổng {totalCategoryReviews.toLocaleString()} đánh giá
+                  </p>
+                </div>
                 <BarChart3 className="w-5 h-5 text-gray-400" />
               </div>
               <div className="space-y-4">
@@ -149,7 +199,9 @@ export default function Dashboard() {
                 recentReviews.slice(0, 4).map((review) => (
                   <div key={review.id} className="border-l-4 border-blue-500 pl-4 py-2">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-900">{review.categoryName}</span>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">{getCategoryDisplayText(review)}</div>
+                      </div>
                       <div className="flex items-center space-x-2">
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((star) => (

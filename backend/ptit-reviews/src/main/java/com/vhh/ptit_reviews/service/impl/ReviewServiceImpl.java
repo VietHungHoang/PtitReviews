@@ -293,7 +293,10 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public AdminDetailedReviewsResponse getDetailedReviews(int page, int limit, String search) {
-        List<Review> allReviews = reviewRepository.findAll();
+        List<Review> allReviews = reviewRepository.findAll()
+                .stream()
+                .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt())) // Sort by creation date descending (newest first)
+                .toList();
         
         // Filter by search if provided
         if (search != null && !search.trim().isEmpty()) {

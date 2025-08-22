@@ -36,13 +36,22 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     Double findAverageRatingBetween(@Param("startDate") LocalDateTime startDate, 
                                    @Param("endDate") LocalDateTime endDate);
     
-    @Query("SELECT r.id, u.name, c.name, rc.rate, rc.reviewText, r.createdAt " +
+    @Query("SELECT rc.review.id, rc.review.user.name, rc.category.name, rc.category.id, rc.rate, rc.reviewText, rc.review.createdAt " +
            "FROM ReviewCategory rc " +
-           "JOIN rc.review r " +
-           "JOIN r.user u " +
-           "JOIN rc.category c " +
-           "ORDER BY r.createdAt DESC")
+           "ORDER BY rc.review.createdAt DESC")
     List<Object[]> findRecentReviews(Pageable pageable);
+    
+    @Query("SELECT rci.reviewCategory.review.id, l.name " +
+           "FROM ReviewCategoryItem rci " +
+           "JOIN rci.lecturer l " +
+           "WHERE rci.reviewCategory.review.id IN :reviewIds AND rci.reviewCategory.category.id = 1")
+    List<Object[]> findLecturerNamesByReviewIds(@Param("reviewIds") List<Long> reviewIds);
+    
+    @Query("SELECT rci.reviewCategory.review.id, s.name " +
+           "FROM ReviewCategoryItem rci " +
+           "JOIN rci.subject s " +
+           "WHERE rci.reviewCategory.review.id IN :reviewIds AND rci.reviewCategory.category.id = 2")
+    List<Object[]> findSubjectNamesByReviewIds(@Param("reviewIds") List<Long> reviewIds);
     
     @Query("SELECT rc.rate, COUNT(rc) " +
            "FROM ReviewCategory rc " +

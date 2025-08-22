@@ -1,6 +1,6 @@
 import { AuthLogin, AuthLoginResponse, Category, CategoryInfo, Lecturer, ReviewCreateResponse, ReviewRequest, ReviewHistoryItem, Subject, UserReviewsResponse } from "../types";
 
-const API_BASE_URL = 'https://8080-viethunghoa-ptitreviews-yb6u5tzsd8g.ws-eu121.gitpod.io/api/v1';
+const API_BASE_URL = 'https://8080-viethunghoa-ptitreviews-yb6u5tzsd8g.ws-us121.gitpod.io/api/v1';
 
 // API Response interface
 interface ApiResponse<T> {
@@ -231,11 +231,24 @@ export const analyticsApi = {
         id: number;
         userName: string;
         categoryName: string;
+        categoryId: number;
         rating: number;
         preview: string;
         createdAt: string;
+        lecturerNames: string[];
+        subjectNames: string[];
       }>;
       ratingDistribution: Record<number, number>; // Phân bố điểm đánh giá (1-5 sao)
+      weeklyComparison: {
+        thisWeekReviews: number;
+        lastWeekReviews: number;
+        thisWeekAvgRating: number;
+        lastWeekAvgRating: number;
+        reviewsChangePercent: string;
+        ratingChange: string;
+        reviewsChangeType: 'increase' | 'decrease' | 'no_change';
+        ratingChangeType: 'increase' | 'decrease' | 'no_change';
+      };
     }>('/analytics/dashboard');
   },
 

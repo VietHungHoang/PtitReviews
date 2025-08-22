@@ -11,6 +11,7 @@ public record DashboardStatsResponse(
     Map<String, Long> reviewsByCategory,
     java.util.List<TrendDataResponse> trendData,
     java.util.List<RecentReviewResponse> recentReviews,
-    Map<Integer, Long> ratingDistribution  // Phân bố điểm đánh giá (1-5 sao)
+    Map<Integer, Long> ratingDistribution,  // Phân bố điểm đánh giá (1-5 sao)
+    WeeklyComparisonResponse weeklyComparison  // So sánh tuần này với tuần trước
 ) {
 }
